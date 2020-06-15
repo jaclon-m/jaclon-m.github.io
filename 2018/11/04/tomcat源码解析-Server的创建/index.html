@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="generator" content="Hexo 4.2.1"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>tomcat源码解析-Server的创建 - Jacklon&#039;s Blog</title><meta description="digester规则补充本篇将聚焦server.xml的解析，介绍Server的整个创建过程。不过在这之前又整理了一下关于digester解析的内容，如果有需要可以参考一下几篇内容：https:&amp;#x2F;&amp;#x2F;blog.csdn.net&amp;#x2F;qq_24451605&amp;#x2F;article&amp;#x2F;details&amp;#x2F;51289519https:&amp;#x2F;&amp;#x2F;blog.csdn.net&amp;#x2F;caihaijiang&amp;#x2F;article&amp;#x2F;details&amp;#x2F;5"><meta property="og:type" content="blog"><meta property="og:title" content="tomcat源码解析-Server的创建"><meta property="og:url" content="http://59.110.153.50/2018/11/04/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-Server%E7%9A%84%E5%88%9B%E5%BB%BA/"><meta property="og:site_name" content="Jacklon&#039;s Blog"><meta property="og:description" content="digester规则补充本篇将聚焦server.xml的解析，介绍Server的整个创建过程。不过在这之前又整理了一下关于digester解析的内容，如果有需要可以参考一下几篇内容：https:&amp;#x2F;&amp;#x2F;blog.csdn.net&amp;#x2F;qq_24451605&amp;#x2F;article&amp;#x2F;details&amp;#x2F;51289519https:&amp;#x2F;&amp;#x2F;blog.csdn.net&amp;#x2F;caihaijiang&amp;#x2F;article&amp;#x2F;details&amp;#x2F;5"><meta property="og:image" content="https://raw.githubusercontent.com/jaclon-m/blogImage/master/tomcat/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-33.png"><meta property="article:published_time" content="2018-11-04T02:39:26.000Z"><meta property="article:modified_time" content="2020-06-15T16:03:59.303Z"><meta property="article:author" content="Jacklon"><meta property="article:tag" content="tomcat"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://raw.githubusercontent.com/jaclon-m/blogImage/master/tomcat/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-33.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://59.110.153.50/2018/11/04/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-Server%E7%9A%84%E5%88%9B%E5%BB%BA/"},"headline":"Jacklon's Blog","image":["https://raw.githubusercontent.com/jaclon-m/blogImage/master/tomcat/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-33.png"],"datePublished":"2018-11-04T02:39:26.000Z","dateModified":"2020-06-15T16:03:59.303Z","author":{"@type":"Person","name":"Jacklon"},"description":"digester规则补充本篇将聚焦server.xml的解析，介绍Server的整个创建过程。不过在这之前又整理了一下关于digester解析的内容，如果有需要可以参考一下几篇内容：https:&#x2F;&#x2F;blog.csdn.net&#x2F;qq_24451605&#x2F;article&#x2F;details&#x2F;51289519https:&#x2F;&#x2F;blog.csdn.net&#x2F;caihaijiang&#x2F;article&#x2F;details&#x2F;5"}</script><link rel="canonical" href="http://59.110.153.50/2018/11/04/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-Server%E7%9A%84%E5%88%9B%E5%BB%BA/"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/dark.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><script>var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?65d4748cd6417633e46d97986b1808cf";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();</script><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.svg" alt="Jacklon&#039;s Blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">Home</a><a class="navbar-item" href="/archives">Archives</a><a class="navbar-item" href="/categories">Categories</a><a class="navbar-item" href="/tags">Tags</a><a class="navbar-item" href="/about">About</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="Catalogue" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="Search" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><time class="level-item" dateTime="2018-11-04T02:39:26.000Z" title="2018-11-04T02:39:26.000Z">2018-11-04</time><span class="level-item"><a class="link-muted" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E8%B7%AF/">计算机网路</a><span> / </span><a class="link-muted" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E8%B7%AF/tomcat/">tomcat</a></span><span class="level-item">20 minutes read (About 3044 words)</span></div></div><h1 class="title is-3 is-size-4-mobile">tomcat源码解析-Server的创建</h1><div class="content"><h2 id="digester规则补充"><a href="#digester规则补充" class="headerlink" title="digester规则补充"></a>digester规则补充</h2><p>本篇将聚焦server.xml的解析，介绍Server的整个创建过程。不过在这之前又整理了一下关于digester解析的内容，如果有需要可以参考一下几篇内容：<br><a href="https://blog.csdn.net/qq_24451605/article/details/51289519">https://blog.csdn.net/qq_24451605/article/details/51289519</a><br><a href="https://blog.csdn.net/caihaijiang/article/details/5944955">https://blog.csdn.net/caihaijiang/article/details/5944955</a><br><a href="http://commons.apache.org/proper/commons-digester/guide/core.html">http://commons.apache.org/proper/commons-digester/guide/core.html</a></p>
+<ol>
+<li><p>addObjectCreate三个参数创建对象方法第三个参数的含义：</p>
+<pre><code>public void addObjectCreate( String pattern , String className , String attributeName )
+    pattern - Element matching pattern
+    className - Default Java class name to be created
+    attributeName - Attribute name that optionally overrides the default Java class name to be created</code></pre><p>覆盖第二个参数java class的默认类名，可以将第二个参数置为null，使用第三个参数设置类名，这样可以配置多个相同类型对象：例如配置多个生命周期监听器。</p>
+</li>
+<li><p>addSetNext 第三个参数的作用</p>
+<p> public void addSetNext(String pattern,String methodName,String paramType)</p>
+<pre><code>paramType - Java class name of the expected parameter type (if you wish to use a primitive type, specify the corresonding Java wrapper class instead, such as java.lang.Boolean for a boolean parameter)</code></pre><p>设置期望的class类型</p>
+</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="Server的解析"><a href="#Server的解析" class="headerlink" title="Server的解析"></a>Server的解析</h2><p>要了解Server的创建，就需要回到前面关于Tomcat启动过程文章中介绍的Catalina中的load方法，在load方法中会解析conf/server.xml配置文件。</p>
+<p>前面有提到，Tomcat是使用Digester解析server.xml的，Digester的解析规则是在Catalina类的createStartDigester方法中。</p>
+<p>简单分析下该方法。</p>
+<pre><code>// 首先实例化一个Digester对象
+Digester digester = new Digester();
+// 设置为false表示解析xml时不需要进行DTD的规则校验
+digester.setValidating(false);
+// 是否进行节点设置规则校验,如果xml中相应节点没有设置解析规则会在控制台显示提示信息
+digester.setRulesValidation(true);</code></pre><h3 id="创建Server实例"><a href="#创建Server实例" class="headerlink" title="创建Server实例"></a>创建Server实例</h3><pre><code>    // Configure the actions we will be using
+digester.addObjectCreate(&quot;Server&quot;,
+                         &quot;org.apache.catalina.core.StandardServer&quot;,
+                         &quot;className&quot;);
+digester.addSetProperties(&quot;Server&quot;);
+digester.addSetNext(&quot;Server&quot;,
+                    &quot;setServer&quot;,
+                    &quot;org.apache.catalina.Server&quot;);</code></pre><p>默认的Server实现类是org.apache.catalina.core.StandardServer，也可以在server.xml的server标签上配置className指定自己的实现。创建Server实例后，然后设置Server相关属性，然后调用栈顶对象（即该Server）之后的对象（是前面通过push(this)放入的Catalina实例）的setServer方法，将server实例设置到Catalina对象中。</p>
+<pre><code>digester.addObjectCreate(&quot;Server/GlobalNamingResources&quot;,
+                         &quot;org.apache.catalina.deploy.NamingResourcesImpl&quot;);
+digester.addSetProperties(&quot;Server/GlobalNamingResources&quot;);
+digester.addSetNext(&quot;Server/GlobalNamingResources&quot;,
+                        &quot;setGlobalNamingResources&quot;,
+                        &quot;org.apache.catalina.deploy.NamingResourcesImpl&quot;);</code></pre><p>GlobalNamingResources：全局命名资源<br>定义JNDI(Java Naming and Directory Interface,Java 命名和目录接口）资源，其允许 Java 软件客户端通过名称搜寻和查找数据。<br>在server.xml中默认配置定义了一个名称为 UserDatabase 的 JNDI，通过”conf/tomcat-users.xml“得到了一个用于用户授权的内存数据库。</p>
+<pre><code>&lt;--server.xml--&gt;
+&lt;GlobalNamingResources&gt;
+&lt;!-- Editable user database that can also be used by
+     UserDatabaseRealm to authenticate users
+--&gt;
+&lt;Resource name=&quot;UserDatabase&quot; auth=&quot;Container&quot;
+          type=&quot;org.apache.catalina.UserDatabase&quot;
+          description=&quot;User database that can be updated and saved&quot;
+          factory=&quot;org.apache.catalina.users.MemoryUserDatabaseFactory&quot;
+          pathname=&quot;conf/tomcat-users.xml&quot; /&gt;
+  &lt;/GlobalNamingResources&gt;</code></pre><br/>
+
+<pre><code>digester.addObjectCreate(&quot;Server/Listener&quot;,
+                         null, // MUST be specified in the element
+                         &quot;className&quot;);
+digester.addSetProperties(&quot;Server/Listener&quot;);
+digester.addSetNext(&quot;Server/Listener&quot;,
+                    &quot;addLifecycleListener&quot;,
+                    &quot;org.apache.catalina.LifecycleListener&quot;);</code></pre><p>接着为Server实例添加生命周期监听器，默认的server.xml中配置了5个生命周期监听器。</p>
+<pre><code>&lt;Listener className=&quot;org.apache.catalina.startup.VersionLoggerListener&quot;/&gt;
+&lt;Listener className=&quot;org.apache.catalina.core.AprLifecycleListener&quot; SSLEngine=&quot;on&quot;/&gt;
+&lt;Listener className=&quot;org.apache.catalina.core.JreMemoryLeakPreventionListener&quot;/&gt;
+&lt;Listener className=&quot;org.apache.catalina.mbeans.GlobalResourcesLifecycleListener&quot;/&gt;
+&lt;Listener className=&quot;org.apache.catalina.core.ThreadLocalLeakPreventionListener&quot;/&gt;</code></pre><p>也可以自己写一个监听器，在server.xml中配置：<br><img src="https://raw.githubusercontent.com/jaclon-m/blogImage/master/tomcat/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-33.png" alt="自定义监听器"></p>
+<pre><code>public class MyListener implements LifecycleListener {
+    @Override
+    public void lifecycleEvent(LifecycleEvent event) {
+        if (Lifecycle.START_EVENT.equals(event.getType())){
+            test();
+        }
+    }
+
+    private void test() {
+        System.out.println(&quot;====================================&quot;);
+        System.out.println(&quot;test test test&quot;);
+        System.out.println(&quot;====================================&quot;);
+    }
+}</code></pre><h3 id="创建Service实例"><a href="#创建Service实例" class="headerlink" title="创建Service实例"></a>创建Service实例</h3><pre><code>//创建Service实例，默认是org.apache.catalina.core.StandardService
+digester.addObjectCreate(&quot;Server/Service&quot;,
+                         &quot;org.apache.catalina.core.StandardService&quot;,
+                         &quot;className&quot;);
+digester.addSetProperties(&quot;Server/Service&quot;);
+digester.addSetNext(&quot;Server/Service&quot;,
+                    &quot;addService&quot;,
+                    &quot;org.apache.catalina.Service&quot;);
+
+//addLifecycleListener为Service增加生命周期监听器，默认情况下，service没指定监听器。
+digester.addObjectCreate(&quot;Server/Service/Listener&quot;,
+                         null, // MUST be specified in the element
+                         &quot;className&quot;);
+digester.addSetProperties(&quot;Server/Service/Listener&quot;);
+digester.addSetNext(&quot;Server/Service/Listener&quot;,
+                    &quot;addLifecycleListener&quot;,
+                    &quot;org.apache.catalina.LifecycleListener&quot;);
+
+//Executor 默认为org.apache.catalina.core.StandardThreadExecutor，并将其设置到Service实例中，默认情况下，未配置Executor。
+digester.addObjectCreate(&quot;Server/Service/Executor&quot;,
+                 &quot;org.apache.catalina.core.StandardThreadExecutor&quot;,
+                 &quot;className&quot;);
+digester.addSetProperties(&quot;Server/Service/Executor&quot;);
+
+digester.addSetNext(&quot;Server/Service/Executor&quot;,
+                    &quot;addExecutor&quot;,
+                    &quot;org.apache.catalina.Executor&quot;);
+
+//为Service实例添加Connector
+digester.addRule(&quot;Server/Service/Connector&quot;,
+                 new ConnectorCreateRule());
+digester.addRule(&quot;Server/Service/Connector&quot;,
+                 new SetAllPropertiesRule(new String[]{&quot;executor&quot;}));
+digester.addSetNext(&quot;Server/Service/Connector&quot;,
+                    &quot;addConnector&quot;,
+                    &quot;org.apache.catalina.connector.Connector&quot;);
+
+//为Connector添加监听器，默认未指定。
+digester.addObjectCreate(&quot;Server/Service/Connector/Listener&quot;,
+                         null, // MUST be specified in the element
+                         &quot;className&quot;);
+digester.addSetProperties(&quot;Server/Service/Connector/Listener&quot;);
+digester.addSetNext(&quot;Server/Service/Connector/Listener&quot;,
+                    &quot;addLifecycleListener&quot;,
+                    &quot;org.apache.catalina.LifecycleListener&quot;);
+
+// Add RuleSets for nested elements
+//指定了Servlet容器相关的各级嵌套子节点的解析规则，这里重点关注Engine和Host的解析，它们的解析和Context密切相关。
+digester.addRuleSet(new NamingRuleSet(&quot;Server/GlobalNamingResources/&quot;));
+digester.addRuleSet(new EngineRuleSet(&quot;Server/Service/&quot;));
+digester.addRuleSet(new HostRuleSet(&quot;Server/Service/Engine/&quot;));
+digester.addRuleSet(new ContextRuleSet(&quot;Server/Service/Engine/Host/&quot;));
+addClusterRuleSet(digester, &quot;Server/Service/Engine/Host/Cluster/&quot;);
+digester.addRuleSet(new NamingRuleSet(&quot;Server/Service/Engine/Host/Context/&quot;));
+
+// When the &apos;engine&apos; is found, set the parentClassLoader.
+digester.addRule(&quot;Server/Service/Engine&quot;,
+                 new SetParentClassLoaderRule(parentClassLoader));
+addClusterRuleSet(digester, &quot;Server/Service/Engine/Cluster/&quot;);</code></pre><p>在设置Connector相关属性时，会判断server.xml中是否指定了executor属性，如果是，会从Service中查找该名称的Executor设置到Connector中。同时，在创建Connector时，也会判断是否有sslImplementationName属性，如果有，设置到使用的协议中，为其指定一个SSL实现。</p>
+<h2 id="Engine的解析"><a href="#Engine的解析" class="headerlink" title="Engine的解析"></a>Engine的解析</h2><p>Engine的解析过程在EngineRuleSet类的addRuleInstances方法中。</p>
+<pre><code>@Override
+public void addRuleInstances(Digester digester) {
+
+    //创建Engine实例，默认是org.apache.catalina.core.StandardEngine.
+    digester.addObjectCreate(prefix + &quot;Engine&quot;,
+                             &quot;org.apache.catalina.core.StandardEngine&quot;,
+                             &quot;className&quot;);
+    digester.addSetProperties(prefix + &quot;Engine&quot;);
+    //给Engine添加一个生命周期监听器，默认是org.apache.catalina.startup.EngineConfig，用于打印Engine启动和停止日志，然后将该Engine实例设置到Service中。
+    需要说明的是EngineConfig生命监听器不是在server.xml配置的，而是在创建Engine是默认添加的。
+    digester.addRule(prefix + &quot;Engine&quot;,
+                     new LifecycleListenerRule
+                     (&quot;org.apache.catalina.startup.EngineConfig&quot;,
+                      &quot;engineConfigClass&quot;));
+    digester.addSetNext(prefix + &quot;Engine&quot;,
+                        &quot;setContainer&quot;,
+                        &quot;org.apache.catalina.Container&quot;);
+
+    //Cluster configuration start 这段是为Engine创建集群配置
+    digester.addObjectCreate(prefix + &quot;Engine/Cluster&quot;,
+                             null, // MUST be specified in the element
+                             &quot;className&quot;);
+    digester.addSetProperties(prefix + &quot;Engine/Cluster&quot;);
+    digester.addSetNext(prefix + &quot;Engine/Cluster&quot;,
+                        &quot;setCluster&quot;,
+                        &quot;org.apache.catalina.Cluster&quot;);
+    //Cluster configuration end
+
+    //和EngineConfig不同，此处的生命周期监听器是在server.xml中配置的，默认未指定。
+    digester.addObjectCreate(prefix + &quot;Engine/Listener&quot;,
+                             null, // MUST be specified in the element
+                             &quot;className&quot;);
+    digester.addSetProperties(prefix + &quot;Engine/Listener&quot;);
+    digester.addSetNext(prefix + &quot;Engine/Listener&quot;,
+                        &quot;addLifecycleListener&quot;,
+                        &quot;org.apache.catalina.LifecycleListener&quot;);
+
+    //为Engine添加realm和valve,realm和tomcat安全相关，valve同tomcat处理请求方式相关。
+    digester.addRuleSet(new RealmRuleSet(prefix + &quot;Engine/&quot;));
+
+    digester.addObjectCreate(prefix + &quot;Engine/Valve&quot;,
+                             null, // MUST be specified in the element
+                             &quot;className&quot;);
+    digester.addSetProperties(prefix + &quot;Engine/Valve&quot;);
+    digester.addSetNext(prefix + &quot;Engine/Valve&quot;,
+                        &quot;addValve&quot;,
+                        &quot;org.apache.catalina.Valve&quot;);
+
+}</code></pre><h2 id="Host解析"><a href="#Host解析" class="headerlink" title="Host解析"></a>Host解析</h2><p>Host的解析，是在HostRuleSet类的addRuleInstances方法中</p>
+<pre><code>@Override
+public void addRuleInstances(Digester digester) {
+
+    digester.addObjectCreate(prefix + &quot;Host&quot;,
+                             &quot;org.apache.catalina.core.StandardHost&quot;,
+                             &quot;className&quot;);
+    digester.addSetProperties(prefix + &quot;Host&quot;);
+    digester.addRule(prefix + &quot;Host&quot;,
+                     new CopyParentClassLoaderRule());
+    digester.addRule(prefix + &quot;Host&quot;,
+                     new LifecycleListenerRule
+                     (&quot;org.apache.catalina.startup.HostConfig&quot;,
+                      &quot;hostConfigClass&quot;));
+    digester.addSetNext(prefix + &quot;Host&quot;,
+                        &quot;addChild&quot;,
+                        &quot;org.apache.catalina.Container&quot;);
+
+    digester.addCallMethod(prefix + &quot;Host/Alias&quot;,
+                           &quot;addAlias&quot;, 0);
+
+    //Cluster configuration start
+    digester.addObjectCreate(prefix + &quot;Host/Cluster&quot;,
+                             null, // MUST be specified in the element
+                             &quot;className&quot;);
+    digester.addSetProperties(prefix + &quot;Host/Cluster&quot;);
+    digester.addSetNext(prefix + &quot;Host/Cluster&quot;,
+                        &quot;setCluster&quot;,
+                        &quot;org.apache.catalina.Cluster&quot;);
+    //Cluster configuration end
+
+    digester.addObjectCreate(prefix + &quot;Host/Listener&quot;,
+                             null, // MUST be specified in the element
+                             &quot;className&quot;);
+    digester.addSetProperties(prefix + &quot;Host/Listener&quot;);
+    digester.addSetNext(prefix + &quot;Host/Listener&quot;,
+                        &quot;addLifecycleListener&quot;,
+                        &quot;org.apache.catalina.LifecycleListener&quot;);
+
+    digester.addRuleSet(new RealmRuleSet(prefix + &quot;Host/&quot;));
+
+    digester.addObjectCreate(prefix + &quot;Host/Valve&quot;,
+                             null, // MUST be specified in the element
+                             &quot;className&quot;);
+    digester.addSetProperties(prefix + &quot;Host/Valve&quot;);
+    digester.addSetNext(prefix + &quot;Host/Valve&quot;,
+                        &quot;addValve&quot;,
+                        &quot;org.apache.catalina.Valve&quot;);
+
+}</code></pre><p>创建默认为org.apache.catalina.core.StandardHost的实例，并将host标签上的属性设置到host实例中。接着调用Host实例中的setParentClassLoader将Engine中getParentClassLoader方法的类加载设置进来。</p>
+<p>同Engine一样，在创建Host时，默认会添加一个生命周期监听器HostConfig，该生命周期监听器比EngineConfig复杂得多，和web应用的加载有关，将在下一篇介绍。</p>
+<p>从配置文件中可以看到默认的Valve为AccessLogValve，用于在处理请求时记录访问日志。</p>
+<h2 id="Context解析"><a href="#Context解析" class="headerlink" title="Context解析"></a>Context解析</h2><p>最后看下Context的解析，在ContextRuleSet的addRuleInstances方法中。</p>
+<p>首先应该明白，Context配置并非来源一处，在Tomcat的conf目录下和Web应用的META-INF目录下都有Context.xml配置文件，而且在server.xml中也可以配置Context标签。<br>多数情况并不需要在server.xml中配置Context，更多是由HostConfig自动扫描部署目录，以Context.xml文件为基础进行Context的创建，具体将在下篇介绍。<br>而这里是指根据server.xml配置的Context进行解析。</p>
+<p>由于方法比较长，我们分步骤解析</p>
+<ol>
+<li><p>Context实例化</p>
+<pre><code>@Override
+public void addRuleInstances(Digester digester) {
+
+    if (create) {
+        digester.addObjectCreate(prefix + &quot;Context&quot;,
+                &quot;org.apache.catalina.core.StandardContext&quot;, &quot;className&quot;);
+        digester.addSetProperties(prefix + &quot;Context&quot;);
+    } else {
+        digester.addRule(prefix + &quot;Context&quot;, new SetContextPropertiesRule());
+    }
+
+    if (create) {
+        digester.addRule(prefix + &quot;Context&quot;,
+                         new LifecycleListenerRule
+                             (&quot;org.apache.catalina.startup.ContextConfig&quot;,
+                              &quot;configClass&quot;));
+        digester.addSetNext(prefix + &quot;Context&quot;,
+                            &quot;addChild&quot;,
+                            &quot;org.apache.catalina.Container&quot;);
+    }</code></pre><p>Context的解析因create不同而不同。通过server.xml配置Context时，create为true，这时默认会创建org.apache.catalina.core.StandardContext的实例。<br>通过HostConfig自动创建Context时，create为false，此时仅解析子节点即可。<br>如果create为true，在创建Context同时，会为context实例添加一个生命周期监听器ContextConfig，用于详细配置Context，如解析web.xml等。</p>
+</li>
+<li><p>为Context添加生命周期监听器</p>
+<pre><code>digester.addObjectCreate(prefix + &quot;Context/Listener&quot;,
+                         null, // MUST be specified in the element
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/Listener&quot;);
+digester.addSetNext(prefix + &quot;Context/Listener&quot;,
+                    &quot;addLifecycleListener&quot;,
+                    &quot;org.apache.catalina.LifecycleListener&quot;);</code></pre></li>
+<li><p>为Context指定类加载器</p>
+<pre><code>digester.addObjectCreate(prefix + &quot;Context/Loader&quot;,
+                    &quot;org.apache.catalina.loader.WebappLoader&quot;,
+                    &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/Loader&quot;);
+digester.addSetNext(prefix + &quot;Context/Loader&quot;,
+                    &quot;setLoader&quot;,
+                    &quot;org.apache.catalina.Loader&quot;);</code></pre></li>
+<li><p>为Context指定会话管理器</p>
+<pre><code>digester.addObjectCreate(prefix + &quot;Context/Manager&quot;,
+                         &quot;org.apache.catalina.session.StandardManager&quot;,
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/Manager&quot;);
+digester.addSetNext(prefix + &quot;Context/Manager&quot;,
+                    &quot;setManager&quot;,
+                    &quot;org.apache.catalina.Manager&quot;);
+
+digester.addObjectCreate(prefix + &quot;Context/Manager/Store&quot;,
+                         null, // MUST be specified in the element
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/Manager/Store&quot;);
+digester.addSetNext(prefix + &quot;Context/Manager/Store&quot;,
+                    &quot;setStore&quot;,
+                    &quot;org.apache.catalina.Store&quot;);
+
+digester.addObjectCreate(prefix + &quot;Context/Manager/SessionIdGenerator&quot;,
+                         &quot;org.apache.catalina.util.StandardSessionIdGenerator&quot;,
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/Manager/SessionIdGenerator&quot;);
+digester.addSetNext(prefix + &quot;Context/Manager/SessionIdGenerator&quot;,
+                    &quot;setSessionIdGenerator&quot;,
+                    &quot;org.apache.catalina.SessionIdGenerator&quot;);</code></pre><p>默认的会话管理器为org.apache.catalina.session.StandardManager，同时为管理器指定会话存储方式和会话标识生成器。</p>
+</li>
+<li><p>为Context添加初始化参数</p>
+<pre><code>digester.addObjectCreate(prefix + &quot;Context/Parameter&quot;,
+                         &quot;org.apache.tomcat.util.descriptor.web.ApplicationParameter&quot;);
+digester.addSetProperties(prefix + &quot;Context/Parameter&quot;);
+digester.addSetNext(prefix + &quot;Context/Parameter&quot;,
+                    &quot;addApplicationParameter&quot;,
+                    &quot;org.apache.tomcat.util.descriptor.web.ApplicationParameter&quot;);</code></pre></li>
+<li><p>为Context添加安全配置和Web资源配置</p>
+<pre><code>digester.addRuleSet(new RealmRuleSet(prefix + &quot;Context/&quot;));
+
+digester.addObjectCreate(prefix + &quot;Context/Resources&quot;,
+                         &quot;org.apache.catalina.webresources.StandardRoot&quot;,
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/Resources&quot;);
+digester.addSetNext(prefix + &quot;Context/Resources&quot;,
+                    &quot;setResources&quot;,
+                    &quot;org.apache.catalina.WebResourceRoot&quot;);
+
+digester.addObjectCreate(prefix + &quot;Context/Resources/PreResources&quot;,
+                         null, // MUST be specified in the element
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/Resources/PreResources&quot;);
+digester.addSetNext(prefix + &quot;Context/Resources/PreResources&quot;,
+                    &quot;addPreResources&quot;,
+                    &quot;org.apache.catalina.WebResourceSet&quot;);
+
+digester.addObjectCreate(prefix + &quot;Context/Resources/JarResources&quot;,
+                         null, // MUST be specified in the element
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/Resources/JarResources&quot;);
+digester.addSetNext(prefix + &quot;Context/Resources/JarResources&quot;,
+                    &quot;addJarResources&quot;,
+                    &quot;org.apache.catalina.WebResourceSet&quot;);
+
+digester.addObjectCreate(prefix + &quot;Context/Resources/PostResources&quot;,
+                         null, // MUST be specified in the element
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/Resources/PostResources&quot;);
+digester.addSetNext(prefix + &quot;Context/Resources/PostResources&quot;,
+                    &quot;addPostResources&quot;,
+                    &quot;org.apache.catalina.WebResourceSet&quot;);
+
+digester.addObjectCreate(prefix + &quot;Context/ResourceLink&quot;,
+        &quot;org.apache.tomcat.util.descriptor.web.ContextResourceLink&quot;);
+digester.addSetProperties(prefix + &quot;Context/ResourceLink&quot;);
+digester.addRule(prefix + &quot;Context/ResourceLink&quot;,
+        new SetNextNamingRule(&quot;addResourceLink&quot;,
+                &quot;org.apache.tomcat.util.descriptor.web.ContextResourceLink&quot;));</code></pre></li>
+<li><p>为Context添加Valve</p>
+<pre><code>digester.addObjectCreate(prefix + &quot;Context/Valve&quot;,
+                         null, // MUST be specified in the element
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/Valve&quot;);
+digester.addSetNext(prefix + &quot;Context/Valve&quot;,
+                    &quot;addValve&quot;,
+                    &quot;org.apache.catalina.Valve&quot;);</code></pre></li>
+<li><p>为Context添加守护资源配置</p>
+<pre><code>digester.addCallMethod(prefix + &quot;Context/WatchedResource&quot;,
+                       &quot;addWatchedResource&quot;, 0);
+
+digester.addCallMethod(prefix + &quot;Context/WrapperLifecycle&quot;,
+                       &quot;addWrapperLifecycle&quot;, 0);
+
+digester.addCallMethod(prefix + &quot;Context/WrapperListener&quot;,
+                       &quot;addWrapperListener&quot;, 0);
+
+digester.addObjectCreate(prefix + &quot;Context/JarScanner&quot;,
+                         &quot;org.apache.tomcat.util.scan.StandardJarScanner&quot;,
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/JarScanner&quot;);
+digester.addSetNext(prefix + &quot;Context/JarScanner&quot;,
+                    &quot;setJarScanner&quot;,
+                    &quot;org.apache.tomcat.JarScanner&quot;);
+
+digester.addObjectCreate(prefix + &quot;Context/JarScanner/JarScanFilter&quot;,
+                         &quot;org.apache.tomcat.util.scan.StandardJarScanFilter&quot;,
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/JarScanner/JarScanFilter&quot;);
+digester.addSetNext(prefix + &quot;Context/JarScanner/JarScanFilter&quot;,
+                    &quot;setJarScanFilter&quot;,
+                    &quot;org.apache.tomcat.JarScanFilter&quot;);</code></pre><p>WatchedResource标签可在Context.xml中找到，用于为Context添加监资源，当这些资源发生变化时，Web应用会被重新加载，默认为WEB-INF/web.xml。<br>WrapperListener标签用于为Context添加一个生命周期类，此类的实例不是添加到Context中，而是Context包含的Wrapper。<br>JarScanner标签为JarScanner指定一jar扫描器，JarScanFilter则为扫描器指定一个过滤器，只有符合条件的jar包才会被处理。</p>
+</li>
+<li><p>为Context添加Cookie处理器</p>
+<pre><code>digester.addObjectCreate(prefix + &quot;Context/CookieProcessor&quot;,
+                         &quot;org.apache.tomcat.util.http.LegacyCookieProcessor&quot;,
+                         &quot;className&quot;);
+digester.addSetProperties(prefix + &quot;Context/CookieProcessor&quot;);
+digester.addSetNext(prefix + &quot;Context/CookieProcessor&quot;,
+                    &quot;setCookieProcessor&quot;,
+                    &quot;org.apache.tomcat.util.http.CookieProcessor&quot;);
+}</code></pre></li>
+</ol>
+<h2 id="小总结"><a href="#小总结" class="headerlink" title="小总结"></a>小总结</h2><p>本篇主要写了Server创建过程中Digester类createStartDigester方法中需要创建的各种资源，对Sever创建过程有了大概的了解，    对server.xml文件各个配置都已经清楚了。<br>也熟悉了Digester的用法，并对GlobalNamingResources和JNDI有了初步了解。</p>
+</div><div class="article-tags size-small mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/tomcat/">tomcat</a></div><!--!--></article></div><div class="card"><div class="card-content"><h3 class="menu-label has-text-centered">Like this article? Support the author with</h3><div class="buttons is-centered"><a class="button is-info donate"><span class="icon is-small"><i class="fab fa-alipay"></i></span><span>Alipay</span><span class="qrcode"><img src="/" alt="Alipay"></span></a><a class="button is-success donate"><span class="icon is-small"><i class="fab fa-weixin"></i></span><span>Wechat</span><span class="qrcode"><img src="/" alt="Wechat"></span></a></div></div></div><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2018/11/18/U2-java%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F%E4%B8%8E%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E5%BC%82%E5%B8%B8/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">U2-java内存区域与内存溢出异常</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2018/10/29/tomat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B%EF%BC%88%E4%BA%8C%EF%BC%89/"><span class="level-item">tomat源码解析-启动过程（二）</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">Comments</h3><div class="content" id="valine-thread"></div><script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script><script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script><script>new Valine({
+            el: '#valine-thread' ,
+            appId: "vdKGC2peyYNqLJP9zJe3AqHe-gzGzoHsz",
+            appKey: "szUoRSxrU2ILylrufEgnWQTw",
+            
+            avatar: "mm",
+            
+            meta: ["nick","mail","link"],
+            pageSize: 10,
+            lang: "zh-Hans",
+            
+            highlight: true,
+            
+            
+            
+            
+            
+            requiredFields: [],
+        });</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-4-widescreen  order-1"><div class="card widget"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar" src="https://s1.ax1x.com/2020/06/08/thQzdS.th.jpg" alt="Jacklon"></figure><p class="title is-size-4 is-block line-height-inherit">Jacklon</p><p class="is-size-6 is-block">非典型程序员一枚</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>Beijing,China</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">Posts</p><a href="/archives"><p class="title">10</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">Categories</p><a href="/categories"><p class="title">5</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">Tags</p><a href="/tags"><p class="title">3</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/jaclon-m" target="_blank" rel="noopener">Follow</a></div><div class="level is-mobile"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Facebook" href="https://facebook.com"><i class="fab fa-facebook"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Twitter" href="https://twitter.com"><i class="fab fa-twitter"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Dribbble" href="https://dribbble.com"><i class="fab fa-dribbble"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="RSS" href="/"><i class="fas fa-rss"></i></a></div></div></div><div class="card widget" id="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">Catalogue</h3><ul class="menu-list"><li><a class="is-flex" href="#digester规则补充"><span class="mr-2">1</span><span>digester规则补充</span></a></li><li><a class="is-flex" href="#Server的解析"><span class="mr-2">2</span><span>Server的解析</span></a><ul class="menu-list"><li><a class="is-flex" href="#创建Server实例"><span class="mr-2">2.1</span><span>创建Server实例</span></a></li><li><a class="is-flex" href="#创建Service实例"><span class="mr-2">2.2</span><span>创建Service实例</span></a></li></ul></li><li><a class="is-flex" href="#Engine的解析"><span class="mr-2">3</span><span>Engine的解析</span></a></li><li><a class="is-flex" href="#Host解析"><span class="mr-2">4</span><span>Host解析</span></a></li><li><a class="is-flex" href="#Context解析"><span class="mr-2">5</span><span>Context解析</span></a></li><li><a class="is-flex" href="#小总结"><span class="mr-2">6</span><span>小总结</span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.svg" alt="Jacklon&#039;s Blog" height="28"></a><p class="size-small"><span>&copy; 2020 Jacklon</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script>moment.locale("zh-Hans");</script><script>var IcarusThemeSettings = {
+            site: {
+                url: 'http://59.110.153.50',
+                external_link: {"enable":true,"exclude":[]}
+            },
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script src="/js/animation.js"></script><a id="back-to-top" title="Back to Top" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="Type something..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"Type something...","untitled":"(Untitled)","posts":"Posts","pages":"Pages","categories":"Categories","tags":"Tags"});
+        });</script></body></html>
