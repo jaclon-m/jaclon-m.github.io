@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="generator" content="Hexo 4.2.1"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>U2-java内存区域与内存溢出异常 - Jacklon&#039;s Blog</title><meta description="1. 运行时数据区Java虚拟机运行时所管理的内存主要包括以下几个区域：  程序计数器 虚拟机栈 本地方法栈 堆 方法区  程序计数器当前线程所执行的字节码的行号指示器，线程私有的。"><meta property="og:type" content="blog"><meta property="og:title" content="U2-java内存区域与内存溢出异常"><meta property="og:url" content="http://59.110.153.50/2018/11/18/U2-java%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F%E4%B8%8E%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E5%BC%82%E5%B8%B8/"><meta property="og:site_name" content="Jacklon&#039;s Blog"><meta property="og:description" content="1. 运行时数据区Java虚拟机运行时所管理的内存主要包括以下几个区域：  程序计数器 虚拟机栈 本地方法栈 堆 方法区  程序计数器当前线程所执行的字节码的行号指示器，线程私有的。"><meta property="og:image" content="http://59.110.153.50/img/og_image.png"><meta property="article:published_time" content="2018-11-18T14:19:20.000Z"><meta property="article:modified_time" content="2020-06-15T15:54:32.384Z"><meta property="article:author" content="Jacklon"><meta property="article:tag" content="JVM"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://59.110.153.50/2018/11/18/U2-java%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F%E4%B8%8E%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E5%BC%82%E5%B8%B8/"},"headline":"Jacklon's Blog","image":["http://59.110.153.50/img/og_image.png"],"datePublished":"2018-11-18T14:19:20.000Z","dateModified":"2020-06-15T15:54:32.384Z","author":{"@type":"Person","name":"Jacklon"},"description":"1. 运行时数据区Java虚拟机运行时所管理的内存主要包括以下几个区域：  程序计数器 虚拟机栈 本地方法栈 堆 方法区  程序计数器当前线程所执行的字节码的行号指示器，线程私有的。"}</script><link rel="canonical" href="http://59.110.153.50/2018/11/18/U2-java%E5%86%85%E5%AD%98%E5%8C%BA%E5%9F%9F%E4%B8%8E%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA%E5%BC%82%E5%B8%B8/"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/dark.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><script>var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?65d4748cd6417633e46d97986b1808cf";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();</script><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.svg" alt="Jacklon&#039;s Blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">Home</a><a class="navbar-item" href="/archives">Archives</a><a class="navbar-item" href="/categories">Categories</a><a class="navbar-item" href="/tags">Tags</a><a class="navbar-item" href="/about">About</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="Katalog" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="Suche" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><time class="level-item" dateTime="2018-11-18T14:19:20.000Z" title="2018-11-18T14:19:20.000Z">2018-11-18</time><span class="level-item"><a class="link-muted" href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a><span> / </span><a class="link-muted" href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/JVM/">JVM</a></span><span class="level-item">9 minutes lesen (Über 1384 Worte)</span></div></div><h1 class="title is-3 is-size-4-mobile">U2-java内存区域与内存溢出异常</h1><div class="content"><h2 id="1-运行时数据区"><a href="#1-运行时数据区" class="headerlink" title="1. 运行时数据区"></a>1. 运行时数据区</h2><p>Java虚拟机运行时所管理的内存主要包括以下几个区域：</p>
+<ul>
+<li>程序计数器</li>
+<li>虚拟机栈</li>
+<li>本地方法栈</li>
+<li>堆</li>
+<li>方法区</li>
+</ul>
+<h3 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a>程序计数器</h3><p>当前线程所执行的字节码的行号指示器，线程私有的。</p>
+<a id="more"></a>
+
+<h3 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a>虚拟机栈</h3><ol>
+<li>线程私有，“描述方法执行的内存模型”,栈帧创建和销毁–方法调用到完成。</li>
+<li>Java内存分为 堆-栈，栈–虚拟机栈-局部变量表：基本数据类型，对象的引用，returnAddress。</li>
+<li>long,double类型数据占用两个局部变量空间(Slot)，其余占用一个Slot，局部变量表在编译时分配内存空间–方法需要在帧中分配的局部变量空间是确定的。</li>
+<li>线程请求栈深度大于虚拟机所允许的深度：StackOverflowError;虚拟机栈扩展时无法申请到足够内存：OutOfMemoryError</li>
+</ol>
+<h3 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a>本地方法栈</h3><p>为虚拟机用的的Native方法服务，与虚拟机栈类似(线程私有)</p>
+<h3 id="堆"><a href="#堆" class="headerlink" title="堆"></a>堆</h3><p>线程共享，存放对象实例和数组，垃圾收集主要区域：GC堆，物理上不连续逻辑上连续即可。</p>
+<h3 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a>方法区</h3><ol>
+<li>线程共享，存放类信息、常量、静态变量和即时编译器编译 后的代码，逻辑上为堆的一部分，别名：非堆（Non-Heap）.</li>
+<li>HotSpot虚拟机把方法区称为”永久代”-GC分代收集扩展至方法区–不是一个好方法</li>
+<li>方法区的数据不是永久存在，数据回收主要针对常量池的回收和类型卸载。</li>
+</ol>
+<h3 id="运行时常量池"><a href="#运行时常量池" class="headerlink" title="运行时常量池"></a>运行时常量池</h3><ol>
+<li>方法区的一部分，存放编译期间生产的字面量和符号引用（？），直接引用。</li>
+<li>运行期间也可以将新的常量放入池中。例：String的intern()方法。</li>
+</ol>
+<h3 id="直接内存"><a href="#直接内存" class="headerlink" title="直接内存"></a>直接内存</h3><p>NIO中基于通道(Channel)和缓冲区(Buffer)的I/O方式可以使用Native函数库直接分配堆外内存/系统内存。</p>
+<h2 id="2-HotSpot虚拟机对象探秘"><a href="#2-HotSpot虚拟机对象探秘" class="headerlink" title="2. HotSpot虚拟机对象探秘"></a>2. HotSpot虚拟机对象探秘</h2><h3 id="对象的创建"><a href="#对象的创建" class="headerlink" title="对象的创建"></a>对象的创建</h3><ol>
+<li>new执行能否在常量池中定义到一个类的符号引用，确认这个类是否被加载，解析和初始化。</li>
+<li>为新对象分配内存空间：指针碰撞方法和空闲列表方法–Java堆是否规整–垃圾收集器是否带有压缩整理算法(Compact)</li>
+<li>并发情况下的线程安全问题：<ul>
+<li>对分配内存空间的动作进行同步处理–CAS+失败重试保证更新操作原子性</li>
+<li>内存分配动作按照线程划分在不同空间之中进行–TLAB本地线程分配缓冲：-XX:+/-UseTLAB参数</li>
+<li></li>
+</ul>
+</li>
+<li>初始化零值–设置对象头–init</li>
+</ol>
+<h3 id="对象的内存布局"><a href="#对象的内存布局" class="headerlink" title="对象的内存布局"></a>对象的内存布局</h3><p>对象头(Header)，实例数据(Instance Data)，填充信息(Padding)</p>
+<ol>
+<li><p>header:</p>
+<ul>
+<li>存储对象自身的运行时数据-Mark Word（对象在不同状态下Mark Word存储内容不同）</li>
+<li>类型指针</li>
+<li>数组–记录长度的数据</li>
+</ul>
+</li>
+<li><p>Instance Data:</p>
+</li>
+<li><p>Padding: HotSpot要求对象起始地址必须为8字节的整数倍</p>
+</li>
+</ol>
+<h3 id="对象的访问定位"><a href="#对象的访问定位" class="headerlink" title="对象的访问定位"></a>对象的访问定位</h3><ul>
+<li>使用句柄</li>
+<li>直接指针</li>
+</ul>
+<h2 id="3-OutOfMemoryError异常小总结"><a href="#3-OutOfMemoryError异常小总结" class="headerlink" title="3. OutOfMemoryError异常小总结"></a>3. OutOfMemoryError异常小总结</h2><ol>
+<li><p>java堆溢出</p>
+<ul>
+<li><p>内存泄漏(Memory Leak):对象没有被引用了，但是没有被垃圾回收，导致堆内存不够用。</p>
+</li>
+<li><p>内存溢出(Memory Overflow)：内存中对象必须存活，但是对象太多导致堆内存不够用。</p>
+<p>通过参数-XX:+HeapDumpOnOutOfMemoryError查看虚拟机在出现内存溢出时Dump出的当前内存的堆转储快照来分析。<br>分析工具：Memory Analyzer<br>Memory Analyzer使用：<br><a href="https://blog.csdn.net/wizard_rp/article/details/73266194">https://blog.csdn.net/wizard_rp/article/details/73266194</a><br><a href="https://www.ibm.com/developerworks/cn/opensource/os-cn-ecl-ma/index.html">https://www.ibm.com/developerworks/cn/opensource/os-cn-ecl-ma/index.html</a><br>内存泄漏可以分析原因，内存溢出可以考虑调整虚拟机参数加大内存或者检查代码减少运行内存占用。</p>
+</li>
+</ul>
+</li>
+<li><p>虚拟机栈和本地方法栈溢出</p>
+<ul>
+<li><p>StackOverflowError异常</p>
+<pre><code>public class JavaVMStackOf {
+
+    private  int stacklength = 1;
+
+    public void stackLeak(){
+        stacklength++;
+        stackLeak();
+    }
+    public static void main(String[] args) {
+        JavaVMStackOf javaVMStackOf = new JavaVMStackOf();
+        try {
+            javaVMStackOf.stackLeak();
+        } catch (Exception e) {
+            System.out.println(javaVMStackOf.stacklength);
+        }
+
+    }
+}</code></pre></li>
+<li><p>OutOfMemoryError异常<br>一般由多线程导致，且不容器找到原因。（代码由于在本机运行时死机消失了，懒得贴出了）</p>
+</li>
+</ul>
+</li>
+<li><p>方法区和运行时常量池异常</p>
+<pre><code>public class RuntimeConstantPoolOOM {
+
+    public static void main(String[] args) {
+        /*List&lt;String&gt; list = new ArrayList&lt;&gt;();
+        int i = 0;
+        while(true){
+            list.add(String.valueOf(i++).intern());
+        }*/
+
+        String str1 = new StringBuilder(&quot;计算机&quot;).append(&quot;r&quot;).toString();
+        System.out.println(str1.intern() == str1);
+        String str2 = new StringBuilder(&quot;ja&quot;).append(&quot;va&quot;).toString();
+        System.out.println(str2.intern() == str2);
+    }
+}</code></pre><ul>
+<li>由于jdk1.7将运行时常量池移出了方法区，所有加/**/代码运行时不会出现异常。</li>
+<li>未加注释的段落jdk1.6运行结果<code>false false</code>,jdk1.7结果为<code>true false</code>。intern()方法在1.7中不再会复制首次出现的字符串实例，而是在常量池中记录首次出现额实例的引用。</li>
+</ul>
+</li>
+<li><p>本机直接内存溢出</p>
+<pre><code>public class DirectMemoryOOM {
+
+    private static final int _1MB = 1024*1024;
+
+    public static void main(String[] args) {
+        Field field = Unsafe.class.getDeclaredFields()[0];
+        field.setAccessible(true);
+        try {
+            Unsafe unsafe  = (Unsafe)field.get(null);
+            while(true){
+                unsafe.allocateMemory(_1MB);
+            }
+        } catch (IllegalArgumentException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+    }
+}</code></pre><p> 如果Heap Dump文件没有明显异常，OOM后dump文件很小，程序中直接或间接使用了NIO，可以考虑这方面原因。</p>
+</li>
+</ol>
+</div><div class="article-tags size-small mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/JVM/">JVM</a></div><!--!--></article></div><div class="card"><div class="card-content"><h3 class="menu-label has-text-centered">Gefällt Ihnen der Artikel? Unterstützen Sie den Autor mit</h3><div class="buttons is-centered"><a class="button is-info donate"><span class="icon is-small"><i class="fab fa-alipay"></i></span><span>Alipay</span><span class="qrcode"><img src="/" alt="Alipay"></span></a><a class="button is-success donate"><span class="icon is-small"><i class="fab fa-weixin"></i></span><span>Wechat</span><span class="qrcode"><img src="/" alt="Wechat"></span></a></div></div></div><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2018/11/18/OpenJDK%E7%BC%96%E8%AF%91/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">OpenJDK编译</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2018/10/13/bat%E5%91%BD%E4%BB%A4%E5%AD%A6%E4%B9%A0/"><span class="level-item">bat命令学习</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">Kommentare</h3><div class="content" id="valine-thread"></div><script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script><script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script><script>new Valine({
+            el: '#valine-thread' ,
+            appId: "vdKGC2peyYNqLJP9zJe3AqHe-gzGzoHsz",
+            appKey: "szUoRSxrU2ILylrufEgnWQTw",
+            
+            avatar: "mm",
+            
+            meta: ["nick","mail","link"],
+            pageSize: 10,
+            lang: "zh-Hans",
+            
+            highlight: true,
+            
+            
+            
+            
+            
+            requiredFields: [],
+        });</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-4-widescreen  order-1"><div class="card widget"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar" src="https://s1.ax1x.com/2020/06/08/thQzdS.th.jpg" alt="Jacklon"></figure><p class="title is-size-4 is-block line-height-inherit">Jacklon</p><p class="is-size-6 is-block">非典型程序员一枚</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>Beijing,China</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">Posts</p><a href="/archives"><p class="title">5</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">Kategorien</p><a href="/categories"><p class="title">3</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">Tags</p><a href="/tags"><p class="title">2</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/jaclon-m" target="_blank" rel="noopener">Folgen</a></div><div class="level is-mobile"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Facebook" href="https://facebook.com"><i class="fab fa-facebook"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Twitter" href="https://twitter.com"><i class="fab fa-twitter"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Dribbble" href="https://dribbble.com"><i class="fab fa-dribbble"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="RSS" href="/"><i class="fas fa-rss"></i></a></div></div></div><div class="card widget" id="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">Katalog</h3><ul class="menu-list"><li><a class="is-flex" href="#1-运行时数据区"><span class="mr-2">1</span><span>1. 运行时数据区</span></a><ul class="menu-list"><li><a class="is-flex" href="#程序计数器"><span class="mr-2">1.1</span><span>程序计数器</span></a></li><li><a class="is-flex" href="#虚拟机栈"><span class="mr-2">1.2</span><span>虚拟机栈</span></a></li><li><a class="is-flex" href="#本地方法栈"><span class="mr-2">1.3</span><span>本地方法栈</span></a></li><li><a class="is-flex" href="#堆"><span class="mr-2">1.4</span><span>堆</span></a></li><li><a class="is-flex" href="#方法区"><span class="mr-2">1.5</span><span>方法区</span></a></li><li><a class="is-flex" href="#运行时常量池"><span class="mr-2">1.6</span><span>运行时常量池</span></a></li><li><a class="is-flex" href="#直接内存"><span class="mr-2">1.7</span><span>直接内存</span></a></li></ul></li><li><a class="is-flex" href="#2-HotSpot虚拟机对象探秘"><span class="mr-2">2</span><span>2. HotSpot虚拟机对象探秘</span></a><ul class="menu-list"><li><a class="is-flex" href="#对象的创建"><span class="mr-2">2.1</span><span>对象的创建</span></a></li><li><a class="is-flex" href="#对象的内存布局"><span class="mr-2">2.2</span><span>对象的内存布局</span></a></li><li><a class="is-flex" href="#对象的访问定位"><span class="mr-2">2.3</span><span>对象的访问定位</span></a></li></ul></li><li><a class="is-flex" href="#3-OutOfMemoryError异常小总结"><span class="mr-2">3</span><span>3. OutOfMemoryError异常小总结</span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.svg" alt="Jacklon&#039;s Blog" height="28"></a><p class="size-small"><span>&copy; 2020 Jacklon</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script>moment.locale("zh-Hans");</script><script>var IcarusThemeSettings = {
+            site: {
+                url: 'http://59.110.153.50',
+                external_link: {"enable":true,"exclude":[]}
+            },
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script src="/js/animation.js"></script><a id="back-to-top" title="Zurück nach oben" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="Tippen Sie etwas..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"Tippen Sie etwas...","untitled":"(Untitled)","posts":"Posts","pages":"Pages","categories":"Kategorien","tags":"Tags"});
+        });</script></body></html>
