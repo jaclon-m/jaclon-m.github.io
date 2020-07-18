@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="generator" content="Hexo 4.2.1"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>tomat源码解析-启动过程（二） - Jacklon&#039;s Blog</title><meta description="main方法上一篇中介绍了startup.bat和catalina.bat脚本。了解到日常双击startup.bat启动tomcat，其实是来到catalina.bat脚本中，由catalina.bat脚本去执行org.apache.catalina.startup.Bootstrap这个类中的main方法。"><meta property="og:type" content="blog"><meta property="og:title" content="tomat源码解析-启动过程（二）"><meta property="og:url" content="http://59.110.153.50/2018/10/29/tomat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B%EF%BC%88%E4%BA%8C%EF%BC%89/"><meta property="og:site_name" content="Jacklon&#039;s Blog"><meta property="og:description" content="main方法上一篇中介绍了startup.bat和catalina.bat脚本。了解到日常双击startup.bat启动tomcat，其实是来到catalina.bat脚本中，由catalina.bat脚本去执行org.apache.catalina.startup.Bootstrap这个类中的main方法。"><meta property="og:image" content="https://raw.githubusercontent.com/jaclon-m/blogImage/master/tomcat/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-31.png"><meta property="og:image" content="https://raw.githubusercontent.com/jaclon-m/blogImage/master/tomcat/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-32.png"><meta property="article:published_time" content="2018-10-29T09:47:45.000Z"><meta property="article:modified_time" content="2020-06-15T16:29:08.163Z"><meta property="article:author" content="Jacklon"><meta property="article:tag" content="bat命令"><meta property="article:tag" content="tomcat"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="https://raw.githubusercontent.com/jaclon-m/blogImage/master/tomcat/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-31.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://59.110.153.50/2018/10/29/tomat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B%EF%BC%88%E4%BA%8C%EF%BC%89/"},"headline":"Jacklon's Blog","image":["https://raw.githubusercontent.com/jaclon-m/blogImage/master/tomcat/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-31.png","https://raw.githubusercontent.com/jaclon-m/blogImage/master/tomcat/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-32.png"],"datePublished":"2018-10-29T09:47:45.000Z","dateModified":"2020-06-15T16:29:08.163Z","author":{"@type":"Person","name":"Jacklon"},"description":"main方法上一篇中介绍了startup.bat和catalina.bat脚本。了解到日常双击startup.bat启动tomcat，其实是来到catalina.bat脚本中，由catalina.bat脚本去执行org.apache.catalina.startup.Bootstrap这个类中的main方法。"}</script><link rel="canonical" href="http://59.110.153.50/2018/10/29/tomat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B%EF%BC%88%E4%BA%8C%EF%BC%89/"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/dark.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><script>var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?65d4748cd6417633e46d97986b1808cf";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();</script><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.svg" alt="Jacklon&#039;s Blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">Home</a><a class="navbar-item" href="/archives">Archives</a><a class="navbar-item" href="/categories">Categories</a><a class="navbar-item" href="/tags">Tags</a><a class="navbar-item" href="/about">About</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="Katalog" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="Suche" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><time class="level-item" dateTime="2018-10-29T09:47:45.000Z" title="2018-10-29T09:47:45.000Z">2018-10-29</time><span class="level-item"><a class="link-muted" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/">计算机网络</a><span> / </span><a class="link-muted" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/tomcat/">tomcat</a></span><span class="level-item">29 minutes lesen (Über 4342 Worte)</span></div></div><h1 class="title is-3 is-size-4-mobile">tomat源码解析-启动过程（二）</h1><div class="content"><h2 id="main方法"><a href="#main方法" class="headerlink" title="main方法"></a>main方法</h2><p>上一篇中介绍了startup.bat和catalina.bat脚本。了解到日常双击startup.bat启动tomcat，其实是来到catalina.bat脚本中，由catalina.bat脚本去执行org.apache.catalina.startup.Bootstrap这个类中的main方法。</p>
+<a id="more"></a>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line">public static void main(String args[]) &#123;</span><br><span class="line"></span><br><span class="line">       if (daemon &#x3D;&#x3D; null) &#123;</span><br><span class="line">           &#x2F;&#x2F; Don&#39;t set daemon until init() has completed</span><br><span class="line">           Bootstrap bootstrap &#x3D; new Bootstrap();</span><br><span class="line">           try &#123;</span><br><span class="line">               bootstrap.init();</span><br><span class="line">           &#125; catch (Throwable t) &#123;</span><br><span class="line">               handleThrowable(t);</span><br><span class="line">               t.printStackTrace();</span><br><span class="line">               return;</span><br><span class="line">           &#125;</span><br><span class="line">           daemon &#x3D; bootstrap;</span><br><span class="line">       &#125; else &#123;</span><br><span class="line">           &#x2F;&#x2F; When running as a service the call to stop will be on a new</span><br><span class="line">           &#x2F;&#x2F; thread so make sure the correct class loader is used to prevent</span><br><span class="line">           &#x2F;&#x2F; a range of class not found exceptions.</span><br><span class="line">           Thread.currentThread().setContextClassLoader(daemon.catalinaLoader);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       try &#123;</span><br><span class="line">           String command &#x3D; &quot;start&quot;;</span><br><span class="line">           if (args.length &gt; 0) &#123;</span><br><span class="line">               command &#x3D; args[args.length - 1];</span><br><span class="line">           &#125;</span><br><span class="line"></span><br><span class="line">           if (command.equals(&quot;startd&quot;)) &#123;</span><br><span class="line">               args[args.length - 1] &#x3D; &quot;start&quot;;</span><br><span class="line">               daemon.load(args);</span><br><span class="line">               daemon.start();</span><br><span class="line">           &#125; else if (command.equals(&quot;stopd&quot;)) &#123;</span><br><span class="line">               args[args.length - 1] &#x3D; &quot;stop&quot;;</span><br><span class="line">               daemon.stop();</span><br><span class="line">           &#125; else if (command.equals(&quot;start&quot;)) &#123;</span><br><span class="line">               daemon.setAwait(true);</span><br><span class="line">               daemon.load(args);</span><br><span class="line">               daemon.start();</span><br><span class="line">           &#125; else if (command.equals(&quot;stop&quot;)) &#123;</span><br><span class="line">               daemon.stopServer(args);</span><br><span class="line">           &#125; else if (command.equals(&quot;configtest&quot;)) &#123;</span><br><span class="line">               daemon.load(args);</span><br><span class="line">               if (null&#x3D;&#x3D;daemon.getServer()) &#123;</span><br><span class="line">                   System.exit(1);</span><br><span class="line">               &#125;</span><br><span class="line">               System.exit(0);</span><br><span class="line">           &#125; else &#123;</span><br><span class="line">               log.warn(&quot;Bootstrap: command \&quot;&quot; + command + &quot;\&quot; does not exist.&quot;);</span><br><span class="line">           &#125;</span><br><span class="line">       &#125; catch (Throwable t) &#123;</span><br><span class="line">           &#x2F;&#x2F; Unwrap the Exception for clearer error reporting</span><br><span class="line">           if (t instanceof InvocationTargetException &amp;&amp;</span><br><span class="line">                   t.getCause() !&#x3D; null) &#123;</span><br><span class="line">               t &#x3D; t.getCause();</span><br><span class="line">           &#125;</span><br><span class="line">           handleThrowable(t);</span><br><span class="line">           t.printStackTrace();</span><br><span class="line">           System.exit(1);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p>可以看出main方法大致可以分为两部分。</p>
+<p>上部分是实例化一个Bootstrap对象，并调用init方法，然后赋值给daemon变量（是一个BootStrap类型对象），当然如果daemon已经不是空了，说明已经初始化过了，就将daemon.catalinaLoader直接设置到当前线程（daemon.catalinaLoader是用来加载tomcat内部服务器所需类的类加载器）。</p>
+<p>下部分是根据传递进来的参数决定走哪一步，当双击startup.bat时，传进来的是start，所以会来到这段：</p>
+<pre><code>else if (command.equals(&quot;start&quot;)) {
+    daemon.setAwait(true);
+    daemon.load(args);
+    daemon.start();
+}</code></pre><p>这里主要是调用三个方法，setAwait，load和start。</p>
+<p>所以对于Bootstrap重要关注的就是<strong><code>init，setAwait，load</code></strong>和<strong><code>start</code></strong>这四个方法。</p>
+<h2 id="init方法"><a href="#init方法" class="headerlink" title="init方法"></a>init方法</h2><pre><code>public void init() throws Exception {
+
+    initClassLoaders();
+
+    Thread.currentThread().setContextClassLoader(catalinaLoader);
+
+    SecurityClassLoad.securityClassLoad(catalinaLoader);
+
+    // Load our startup class and call its process() method
+    if (log.isDebugEnabled())
+        log.debug(&quot;Loading startup class&quot;);
+    Class&lt;?&gt; startupClass = catalinaLoader.loadClass(&quot;org.apache.catalina.startup.Catalina&quot;);
+    Object startupInstance = startupClass.getConstructor().newInstance();
+
+    // Set the shared extensions class loader
+    if (log.isDebugEnabled())
+        log.debug(&quot;Setting startup class properties&quot;);
+    String methodName = &quot;setParentClassLoader&quot;;
+    Class&lt;?&gt; paramTypes[] = new Class[1];
+    paramTypes[0] = Class.forName(&quot;java.lang.ClassLoader&quot;);
+    Object paramValues[] = new Object[1];
+    paramValues[0] = sharedLoader;
+    Method method =
+        startupInstance.getClass().getMethod(methodName, paramTypes);
+    method.invoke(startupInstance, paramValues);
+
+    catalinaDaemon = startupInstance;
+
+}</code></pre><p>init方法调用initClassLoaders初始化类加载器，然后将初始化好的catalinaLoader设置到当前线程，接着通过反射调用org.apache.catalina.startup.Catalina类的setParentClassLoader，将sharedLoader传入。</p>
+<h3 id="1-initClassLoaders方法"><a href="#1-initClassLoaders方法" class="headerlink" title="1. initClassLoaders方法"></a>1. initClassLoaders方法</h3><pre><code>private void initClassLoaders() {
+    try {
+        commonLoader = createClassLoader(&quot;common&quot;, null);
+        if( commonLoader == null ) {
+            // no config file, default to this loader - we might be in a &apos;single&apos; env.
+            commonLoader=this.getClass().getClassLoader();
+        }
+        catalinaLoader = createClassLoader(&quot;server&quot;, commonLoader);
+        sharedLoader = createClassLoader(&quot;shared&quot;, commonLoader);
+    } catch (Throwable t) {
+        handleThrowable(t);
+        log.error(&quot;Class loader creation threw exception&quot;, t);
+        System.exit(1);
+    }
+}</code></pre><p>这里初始化三个类加载器，分别是commonLoader，catalinaLoader，sharedLoader并建立他们之间的关系，catalinaLoader和sharedLoader的parent是commonLoader。<br>接下来在createClassLoader()方法看三个类加载器的创建过程</p>
+<h3 id="2-createClassLoader"><a href="#2-createClassLoader" class="headerlink" title="2. createClassLoader()"></a>2. createClassLoader()</h3><pre><code>private ClassLoader createClassLoader(String name, ClassLoader parent)
+    throws Exception {
+
+    String value = CatalinaProperties.getProperty(name + &quot;.loader&quot;);
+    if ((value == null) || (value.equals(&quot;&quot;)))
+        return parent;
+
+    value = replace(value);
+
+    List&lt;Repository&gt; repositories = new ArrayList&lt;&gt;();
+
+    String[] repositoryPaths = getPaths(value);
+
+    for (String repository : repositoryPaths) {
+        // Check for a JAR URL repository
+        try {
+            @SuppressWarnings(&quot;unused&quot;)
+            URL url = new URL(repository);
+            repositories.add(
+                    new Repository(repository, RepositoryType.URL));
+            continue;
+        } catch (MalformedURLException e) {
+            // Ignore
+        }
+
+        // Local repository
+        if (repository.endsWith(&quot;*.jar&quot;)) {
+            repository = repository.substring
+                (0, repository.length() - &quot;*.jar&quot;.length());
+            repositories.add(
+                    new Repository(repository, RepositoryType.GLOB));
+        } else if (repository.endsWith(&quot;.jar&quot;)) {
+            repositories.add(
+                    new Repository(repository, RepositoryType.JAR));
+        } else {
+            repositories.add(
+                    new Repository(repository, RepositoryType.DIR));
+        }
+    }
+
+    return ClassLoaderFactory.createClassLoader(repositories, parent);
+}</code></pre><p>createClassLoader首先回去读取CatalinaProperties中的common.loader，server.loader，shared.loader三个属性，进入CatalinaProperties类中会发现这三个属性来自conf/catalina.properties文件。<br>接着往下createClassLoader会将common.loader，server.loader，shared.loader三个属性中的值获取然后解析成Repository，然后交给ClassLoaderFactory.createClassLoader方法去创建类加载器，最后可以实现三个不同的类加载器分别加载不同目录下的类。</p>
+<p>当然要说清楚的是，默认情况下，catalina.properties中server.loader，shared.loader并没有配置值，三个类加载是同一个，默认加载{catalina.home}/lib目录下的类和jar包。<br>如果想配置对所有web应用都可见但对tomcat内部服务器不可见的类，此时应该在catalina.properties文件中的shared.loader下进行配置。</p>
+<p><em>接下来我们回到init()方法中继续看下面的步骤</em></p>
+<p>Thread.currentThread().setContextClassLoader(catalinaLoader)将catalinaLoader设置为Tomcat主线程的线程上下文类加载器。</p>
+<h3 id="3-SecurityClassLoad-securityClassLoad-catalinaLoader"><a href="#3-SecurityClassLoad-securityClassLoad-catalinaLoader" class="headerlink" title="3 *SecurityClassLoad.securityClassLoad(catalinaLoader)"></a>3 *SecurityClassLoad.securityClassLoad(catalinaLoader)</h3><p>SecurityClassLoad.securityClassLoad用于线程安全的加载tomcat容器所需的class。</p>
+<p>当然，要使这个方法真正起作用，需要启动tomcat安全管理器，由代码可知：</p>
+<pre><code>public static void securityClassLoad(ClassLoader loader) throws Exception {
+    securityClassLoad(loader, true);
+}
+
+
+static void securityClassLoad(ClassLoader loader, boolean requireSecurityManager)
+        throws Exception {
+
+    if (requireSecurityManager &amp;&amp; System.getSecurityManager() == null) {
+        return;
+    }
+
+    loadCorePackage(loader);
+    loadCoyotePackage(loader);
+    loadLoaderPackage(loader);
+    loadRealmPackage(loader);
+    loadServletsPackage(loader);
+    loadSessionPackage(loader);
+    loadUtilPackage(loader);
+    loadJavaxPackage(loader);
+    loadConnectorPackage(loader);
+    loadTomcatPackage(loader);
+}</code></pre><p>如果没启用安全管理器，System.getSecurityManager()=null，直接return。</p>
+<p>可以通过命令行的方式启功安全管理器：<br>catalina.bat run -security或者startup.bat -security</p>
+<p>一旦启动了安全管理器，就会根据conf/catalina.policy文件定义的提供默认的安全策略，securityClassLoad方法中System.getSecurityManager()不再等于null，于是就会去执行一系列加载方法，将tomcat的class加载进来。</p>
+<p>想了解to吗tomcat的安全策略，可以参考下这篇博文：<br><a href="https://www.cnblogs.com/xing901022/p/4565730.html">你很少使用的安全管理SecurityManager</a></p>
+<h3 id="4-通过反射实例化catalina"><a href="#4-通过反射实例化catalina" class="headerlink" title="4. 通过反射实例化catalina"></a>4. 通过反射实例化catalina</h3><p>init()方法在加载完SecurityClassLoader后，就通过反射来实例化catalina，然后反射调用setParentClassLoader将sharedLoader传入到catalina实例中。</p>
+<pre><code>// Load our startup class and call its process() method
+if (log.isDebugEnabled())
+    log.debug(&quot;Loading startup class&quot;);
+Class&lt;?&gt; startupClass = catalinaLoader.loadClass(&quot;org.apache.catalina.startup.Catalina&quot;);
+Object startupInstance = startupClass.getConstructor().newInstance();
+
+// Set the shared extensions class loader
+if (log.isDebugEnabled())
+    log.debug(&quot;Setting startup class properties&quot;);
+String methodName = &quot;setParentClassLoader&quot;;
+Class&lt;?&gt; paramTypes[] = new Class[1];
+paramTypes[0] = Class.forName(&quot;java.lang.ClassLoader&quot;);
+Object paramValues[] = new Object[1];
+paramValues[0] = sharedLoader;
+Method method =
+    startupInstance.getClass().getMethod(methodName, paramTypes);
+method.invoke(startupInstance, paramValues);
+
+catalinaDaemon = startupInstance;</code></pre><p>为什么不直接通过Bootstrap类直接启动tomcat，而是通过反射生成Catalina实例启动？</p>
+<p>在查看tomcat目录结构时应该发现，Bootstrap并不在<code>CATALINAHOME/lib</code>目录下，而是在<code>CATALINA_HOME/bin</code>目录中，Bootstrap和Catalina松耦合（通过反射调用Catalina），它直接依赖JRE运行并为Tomcat应用服务器创建共享类加载器，用于构造Catalina和整个tomcat服务器。实现了启动入口和核心环境的解耦，简化了启动。</p>
+<p>这段话目前理解不是很透彻，毕竟还属于菜鸟阶段。这里贴出一个关于反射作用的链接，勉强可以理解一下吧。<br><a href="https://www.cnblogs.com/yrstudy/p/6500982.html">Java反射机制–是什么，为什么，怎么用</a></p>
+<h2 id="setAwait-方法"><a href="#setAwait-方法" class="headerlink" title="setAwait()方法"></a>setAwait()方法</h2><p>说完了init()方法，接下来进入mian方法的else中</p>
+<pre><code>else if (command.equals(&quot;start&quot;)) {
+    daemon.setAwait(true);
+    daemon.load(args);
+    daemon.start();
+}</code></pre><p>我们来看setAwait()方法：</p>
+<pre><code>public void setAwait(boolean await)
+        throws Exception {
+
+    Class&lt;?&gt; paramTypes[] = new Class[1];
+    paramTypes[0] = Boolean.TYPE;
+    Object paramValues[] = new Object[1];
+    paramValues[0] = Boolean.valueOf(await);
+    Method method =
+        catalinaDaemon.getClass().getMethod(&quot;setAwait&quot;, paramTypes);
+    method.invoke(catalinaDaemon, paramValues);
+
+}</code></pre><p>通过反射调用catalina的setAwait方法，其设置的值是留给后面用的。<br>当Catalina将Tomcat的所有组件启动之后，会检查await属性，如果为true，会调用Catalina.await()，而Catalina.await()又会调用其内部的Server的await()（代码在这里不再贴出）。</p>
+<pre><code>public void start() {
+
+    ...
+
+    if (await) {
+        await();
+        stop();
+    }
+}</code></pre><p>Server.await()包含一个while循环，此循环用于监听指定socket端口(默认为8005)的连接，当某个连接传入的参数为”SHUTDOWN”(默认为”SHUTDOWN”)时，终止此while循环(端口号和终止while循环的参数，在server.xml的Server标签设置)。<br>Server.await()用来维持Bootstrap的main方法(main thread)处于运行状态，而线程池中监听http请求的线程是守护线程(daemon thread)。</p>
+<p>当Tomcat的指定端口接收到关闭命令时，Server.await()内的while循环终止，然后Catalina会调用stop()方法，关闭Tomcat的所有组件，最终Bootstrap的main thread终止，Tomcat关闭。</p>
+<h2 id="load-方法"><a href="#load-方法" class="headerlink" title="load()方法"></a>load()方法</h2><pre><code>private void load(String[] arguments)
+    throws Exception {
+
+    // Call the load() method
+    String methodName = &quot;load&quot;;
+    Object param[];
+    Class&lt;?&gt; paramTypes[];
+    if (arguments==null || arguments.length==0) {
+        paramTypes = null;
+        param = null;
+    } else {
+        paramTypes = new Class[1];
+        paramTypes[0] = arguments.getClass();
+        param = new Object[1];
+        param[0] = arguments;
+    }
+    Method method =
+        catalinaDaemon.getClass().getMethod(methodName, paramTypes);
+    if (log.isDebugEnabled())
+        log.debug(&quot;Calling startup class &quot; + method);
+    method.invoke(catalinaDaemon, param);
+
+}</code></pre><p>该方法通过反射调用catalina的load方法。<br>    public void load() {</p>
+<pre><code>    if (loaded) {
+        return;
+    }
+    loaded = true;
+
+    long t1 = System.nanoTime();
+
+    initDirs();
+
+    // Before digester - it may be needed
+    initNaming();
+
+    // Create and execute our Digester
+    Digester digester = createStartDigester();
+
+    InputSource inputSource = null;
+    InputStream inputStream = null;
+    File file = null;
+    try {
+        try {
+            file = configFile();
+            inputStream = new FileInputStream(file);
+            inputSource = new InputSource(file.toURI().toURL().toString());
+        } catch (Exception e) {
+            if (log.isDebugEnabled()) {
+                log.debug(sm.getString(&quot;catalina.configFail&quot;, file), e);
+            }
+        }
+        if (inputStream == null) {
+            try {
+                inputStream = getClass().getClassLoader()
+                    .getResourceAsStream(getConfigFile());
+                inputSource = new InputSource
+                    (getClass().getClassLoader()
+                     .getResource(getConfigFile()).toString());
+            } catch (Exception e) {
+                if (log.isDebugEnabled()) {
+                    log.debug(sm.getString(&quot;catalina.configFail&quot;,
+                            getConfigFile()), e);
+                }
+            }
+        }
+
+        // This should be included in catalina.jar
+        // Alternative: don&apos;t bother with xml, just create it manually.
+        if (inputStream == null) {
+            try {
+                inputStream = getClass().getClassLoader()
+                        .getResourceAsStream(&quot;server-embed.xml&quot;);
+                inputSource = new InputSource
+                (getClass().getClassLoader()
+                        .getResource(&quot;server-embed.xml&quot;).toString());
+            } catch (Exception e) {
+                if (log.isDebugEnabled()) {
+                    log.debug(sm.getString(&quot;catalina.configFail&quot;,
+                            &quot;server-embed.xml&quot;), e);
+                }
+            }
+        }
+
+
+        if (inputStream == null || inputSource == null) {
+            if  (file == null) {
+                log.warn(sm.getString(&quot;catalina.configFail&quot;,
+                        getConfigFile() + &quot;] or [server-embed.xml]&quot;));
+            } else {
+                log.warn(sm.getString(&quot;catalina.configFail&quot;,
+                        file.getAbsolutePath()));
+                if (file.exists() &amp;&amp; !file.canRead()) {
+                    log.warn(&quot;Permissions incorrect, read permission is not allowed on the file.&quot;);
+                }
+            }
+            return;
+        }
+
+        try {
+            inputSource.setByteStream(inputStream);
+            digester.push(this);
+            digester.parse(inputSource);
+        } catch (SAXParseException spe) {
+            log.warn(&quot;Catalina.start using &quot; + getConfigFile() + &quot;: &quot; +
+                    spe.getMessage());
+            return;
+        } catch (Exception e) {
+            log.warn(&quot;Catalina.start using &quot; + getConfigFile() + &quot;: &quot; , e);
+            return;
+        }
+    } finally {
+        if (inputStream != null) {
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                // Ignore
+            }
+        }
+    }
+
+    getServer().setCatalina(this);
+    getServer().setCatalinaHome(Bootstrap.getCatalinaHomeFile());
+    getServer().setCatalinaBase(Bootstrap.getCatalinaBaseFile());
+
+    // Stream redirection
+    initStreams();
+
+    // Start the new server
+    try {
+        getServer().init();
+    } catch (LifecycleException e) {
+        if (Boolean.getBoolean(&quot;org.apache.catalina.startup.EXIT_ON_INIT_FAILURE&quot;)) {
+            throw new java.lang.Error(e);
+        } else {
+            log.error(&quot;Catalina.start&quot;, e);
+        }
+    }
+
+    long t2 = System.nanoTime();
+    if(log.isInfoEnabled()) {
+        log.info(&quot;Initialization processed in &quot; + ((t2 - t1) / 1000000) + &quot; ms&quot;);
+    }
+}</code></pre><p>catalina的load方法首先初始化目录（initDirs）和初始化命名服务（initNaming），然后是createStartDigester（要了解这个方法，应该先了解一下Digester，它是apache的一个开源组件，通过它可以很方便的从xml文件生成java对象），该方法初始化Digester，为Xml的标签即解析模式增加处理规则rule。</p>
+<p>关于Digester，可以参考这篇博文：<br><a href="https://blog.csdn.net/qq_24451605/article/details/51289519">利用Digester解析xml文件</a></p>
+<h3 id="来看createStartDigester方法"><a href="#来看createStartDigester方法" class="headerlink" title="来看createStartDigester方法"></a>来看createStartDigester方法</h3><pre><code>protected Digester createStartDigester() {
+    long t1=System.currentTimeMillis();
+    // Initialize the digester
+    Digester digester = new Digester();
+    digester.setValidating(false);
+    digester.setRulesValidation(true);
+    Map&lt;Class&lt;?&gt;, List&lt;String&gt;&gt; fakeAttributes = new HashMap&lt;&gt;();
+    List&lt;String&gt; attrs = new ArrayList&lt;&gt;();
+    attrs.add(&quot;className&quot;);
+    fakeAttributes.put(Object.class, attrs);
+    digester.setFakeAttributes(fakeAttributes);
+    digester.setUseContextClassLoader(true);
+
+    // Configure the actions we will be using
+    digester.addObjectCreate(&quot;Server&quot;,
+                             &quot;org.apache.catalina.core.StandardServer&quot;,
+                             &quot;className&quot;);
+    digester.addSetProperties(&quot;Server&quot;);
+    digester.addSetNext(&quot;Server&quot;,
+                        &quot;setServer&quot;,
+                        &quot;org.apache.catalina.Server&quot;);
+
+    digester.addObjectCreate(&quot;Server/GlobalNamingResources&quot;,
+                             &quot;org.apache.catalina.deploy.NamingResourcesImpl&quot;);
+    digester.addSetProperties(&quot;Server/GlobalNamingResources&quot;);
+    digester.addSetNext(&quot;Server/GlobalNamingResources&quot;,
+                        &quot;setGlobalNamingResources&quot;,
+                        &quot;org.apache.catalina.deploy.NamingResourcesImpl&quot;);
+
+    digester.addObjectCreate(&quot;Server/Listener&quot;,
+                             null, // MUST be specified in the element
+                             &quot;className&quot;);
+    digester.addSetProperties(&quot;Server/Listener&quot;);
+    digester.addSetNext(&quot;Server/Listener&quot;,
+                        &quot;addLifecycleListener&quot;,
+                        &quot;org.apache.catalina.LifecycleListener&quot;);
+
+    digester.addObjectCreate(&quot;Server/Service&quot;,
+                             &quot;org.apache.catalina.core.StandardService&quot;,
+                             &quot;className&quot;);
+    digester.addSetProperties(&quot;Server/Service&quot;);
+    digester.addSetNext(&quot;Server/Service&quot;,
+                        &quot;addService&quot;,
+                        &quot;org.apache.catalina.Service&quot;);
+
+    digester.addObjectCreate(&quot;Server/Service/Listener&quot;,
+                             null, // MUST be specified in the element
+                             &quot;className&quot;);
+    digester.addSetProperties(&quot;Server/Service/Listener&quot;);
+    digester.addSetNext(&quot;Server/Service/Listener&quot;,
+                        &quot;addLifecycleListener&quot;,
+                        &quot;org.apache.catalina.LifecycleListener&quot;);
+
+    //Executor
+    digester.addObjectCreate(&quot;Server/Service/Executor&quot;,
+                     &quot;org.apache.catalina.core.StandardThreadExecutor&quot;,
+                     &quot;className&quot;);
+    digester.addSetProperties(&quot;Server/Service/Executor&quot;);
+
+    digester.addSetNext(&quot;Server/Service/Executor&quot;,
+                        &quot;addExecutor&quot;,
+                        &quot;org.apache.catalina.Executor&quot;);
+
+
+    digester.addRule(&quot;Server/Service/Connector&quot;,
+                     new ConnectorCreateRule());
+    digester.addRule(&quot;Server/Service/Connector&quot;, new SetAllPropertiesRule(
+            new String[]{&quot;executor&quot;, &quot;sslImplementationName&quot;, &quot;protocol&quot;}));
+    digester.addSetNext(&quot;Server/Service/Connector&quot;,
+                        &quot;addConnector&quot;,
+                        &quot;org.apache.catalina.connector.Connector&quot;);
+
+    digester.addObjectCreate(&quot;Server/Service/Connector/SSLHostConfig&quot;,
+                             &quot;org.apache.tomcat.util.net.SSLHostConfig&quot;);
+    digester.addSetProperties(&quot;Server/Service/Connector/SSLHostConfig&quot;);
+    digester.addSetNext(&quot;Server/Service/Connector/SSLHostConfig&quot;,
+            &quot;addSslHostConfig&quot;,
+            &quot;org.apache.tomcat.util.net.SSLHostConfig&quot;);
+
+    digester.addRule(&quot;Server/Service/Connector/SSLHostConfig/Certificate&quot;,
+                     new CertificateCreateRule());
+    digester.addRule(&quot;Server/Service/Connector/SSLHostConfig/Certificate&quot;,
+                     new SetAllPropertiesRule(new String[]{&quot;type&quot;}));
+    digester.addSetNext(&quot;Server/Service/Connector/SSLHostConfig/Certificate&quot;,
+                        &quot;addCertificate&quot;,
+                        &quot;org.apache.tomcat.util.net.SSLHostConfigCertificate&quot;);
+
+    digester.addObjectCreate(&quot;Server/Service/Connector/SSLHostConfig/OpenSSLConf&quot;,
+                             &quot;org.apache.tomcat.util.net.openssl.OpenSSLConf&quot;);
+    digester.addSetProperties(&quot;Server/Service/Connector/SSLHostConfig/OpenSSLConf&quot;);
+    digester.addSetNext(&quot;Server/Service/Connector/SSLHostConfig/OpenSSLConf&quot;,
+                        &quot;setOpenSslConf&quot;,
+                        &quot;org.apache.tomcat.util.net.openssl.OpenSSLConf&quot;);
+
+    digester.addObjectCreate(&quot;Server/Service/Connector/SSLHostConfig/OpenSSLConf/OpenSSLConfCmd&quot;,
+                             &quot;org.apache.tomcat.util.net.openssl.OpenSSLConfCmd&quot;);
+    digester.addSetProperties(&quot;Server/Service/Connector/SSLHostConfig/OpenSSLConf/OpenSSLConfCmd&quot;);
+    digester.addSetNext(&quot;Server/Service/Connector/SSLHostConfig/OpenSSLConf/OpenSSLConfCmd&quot;,
+                        &quot;addCmd&quot;,
+                        &quot;org.apache.tomcat.util.net.openssl.OpenSSLConfCmd&quot;);
+
+    digester.addObjectCreate(&quot;Server/Service/Connector/Listener&quot;,
+                             null, // MUST be specified in the element
+                             &quot;className&quot;);
+    digester.addSetProperties(&quot;Server/Service/Connector/Listener&quot;);
+    digester.addSetNext(&quot;Server/Service/Connector/Listener&quot;,
+                        &quot;addLifecycleListener&quot;,
+                        &quot;org.apache.catalina.LifecycleListener&quot;);
+
+    digester.addObjectCreate(&quot;Server/Service/Connector/UpgradeProtocol&quot;,
+                              null, // MUST be specified in the element
+                              &quot;className&quot;);
+    digester.addSetProperties(&quot;Server/Service/Connector/UpgradeProtocol&quot;);
+    digester.addSetNext(&quot;Server/Service/Connector/UpgradeProtocol&quot;,
+                        &quot;addUpgradeProtocol&quot;,
+                        &quot;org.apache.coyote.UpgradeProtocol&quot;);
+
+    // Add RuleSets for nested elements
+    digester.addRuleSet(new NamingRuleSet(&quot;Server/GlobalNamingResources/&quot;));
+    digester.addRuleSet(new EngineRuleSet(&quot;Server/Service/&quot;));
+    digester.addRuleSet(new HostRuleSet(&quot;Server/Service/Engine/&quot;));
+    digester.addRuleSet(new ContextRuleSet(&quot;Server/Service/Engine/Host/&quot;));
+    addClusterRuleSet(digester, &quot;Server/Service/Engine/Host/Cluster/&quot;);
+    digester.addRuleSet(new NamingRuleSet(&quot;Server/Service/Engine/Host/Context/&quot;));
+
+    // When the &apos;engine&apos; is found, set the parentClassLoader.
+    digester.addRule(&quot;Server/Service/Engine&quot;,
+                     new SetParentClassLoaderRule(parentClassLoader));
+    addClusterRuleSet(digester, &quot;Server/Service/Engine/Cluster/&quot;);
+
+    long t2=System.currentTimeMillis();
+    if (log.isDebugEnabled()) {
+        log.debug(&quot;Digester for server.xml created &quot; + ( t2-t1 ));
+    }
+    return digester;
+
+}</code></pre><p>该方法初始化digester，创建一系列解析规则，然后在load方法中会调用：</p>
+<pre><code>digester.parse(inputSource);</code></pre><p>可见digester解析的源是inputSource，而inputSource是来自于conf/server.xml：</p>
+<pre><code>file = configFile();
+inputStream = new FileInputStream(file);
+inputSource = new InputSource(file.toURI().toURL().toString());</code></pre><p>configFile：</p>
+<pre><code> protected File configFile() {
+
+    //protected String configFile = &quot;conf/server.xml&quot;;
+    File file = new File(configFile);
+    if (!file.isAbsolute()) {
+        file = new File(Bootstrap.getCatalinaBase(), configFile);
+    }
+    return file;
+
+}</code></pre><p>这样便创建出了StandardServer对象，接着便调用getServer().init();</p>
+<h3 id="getServer-init"><a href="#getServer-init" class="headerlink" title="getServer().init()"></a>getServer().init()</h3><p>init方法来自StandardServer的父类LifecycleBase：<br>    public final synchronized void init() throws LifecycleException {<br>        if (!state.equals(LifecycleState.NEW)) {<br>            invalidTransition(Lifecycle.BEFORE_INIT_EVENT);<br>        }</p>
+<pre><code>    try {
+        setStateInternal(LifecycleState.INITIALIZING, null, false);
+        initInternal();
+        setStateInternal(LifecycleState.INITIALIZED, null, false);
+    } catch (Throwable t) {
+        handleSubClassException(t, &quot;lifecycleBase.initFail&quot;, toString());
+    }
+}</code></pre><p>具体实现是在子类的initInternal方法中，在调用initInternal方法前后都会设置状态，LifecycleState.INITIALIZING代表正在初始化，LifecycleState.INITIALIZED表示初始化完成，相应会触发生命周期事件。</p>
+<p>在StandardServer的initInternal方法中会调用子组件Services的init方法，并依次传递下去，完成所有组件的init。</p>
+<p>可见catalina的load方法主要是根据conf/server.xml配置文件利用Digester创建服务器组件，然后调用Server的init方法，逐层次的实现所有组件的初始化。<br><img src="https://raw.githubusercontent.com/jaclon-m/blogImage/master/tomcat/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-31.png" alt="组件初始化"></p>
+<h2 id="start-方法"><a href="#start-方法" class="headerlink" title="start()方法"></a>start()方法</h2><p>最后看下start方法：</p>
+<pre><code>public void start()
+        throws Exception {
+    if( catalinaDaemon==null ) init();
+
+    Method method = catalinaDaemon.getClass().getMethod(&quot;start&quot;, (Class [] )null);
+    method.invoke(catalinaDaemon, (Object [])null);
+
+}</code></pre><p>同样也是通过反射调用catalina的start方法：</p>
+<pre><code>public void start() {
+
+    if (getServer() == null) {
+        load();
+    }
+
+    if (getServer() == null) {
+        log.fatal(&quot;Cannot start server. Server instance is not configured.&quot;);
+        return;
+    }
+
+    long t1 = System.nanoTime();
+
+    // Start the new server
+    try {
+        getServer().start();
+    } catch (LifecycleException e) {
+        log.fatal(sm.getString(&quot;catalina.serverStartFail&quot;), e);
+        try {
+            getServer().destroy();
+        } catch (LifecycleException e1) {
+            log.debug(&quot;destroy() failed for failed Server &quot;, e1);
+        }
+        return;
+    }
+
+    long t2 = System.nanoTime();
+    if(log.isInfoEnabled()) {
+        log.info(&quot;Server startup in &quot; + ((t2 - t1) / 1000000) + &quot; ms&quot;);
+    }
+
+    // Register shutdown hook
+    if (useShutdownHook) {
+        if (shutdownHook == null) {
+            shutdownHook = new CatalinaShutdownHook();
+        }
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
+
+        // If JULI is being used, disable JULI&apos;s shutdown hook since
+        // shutdown hooks run in parallel and log messages may be lost
+        // if JULI&apos;s hook completes before the CatalinaShutdownHook()
+        LogManager logManager = LogManager.getLogManager();
+        if (logManager instanceof ClassLoaderLogManager) {
+            ((ClassLoaderLogManager) logManager).setUseShutdownHook(
+                    false);
+        }
+    }
+
+    if (await) {
+        await();
+        stop();
+    }
+}</code></pre><p>该方法主要触发StandardServer的start方法，StandardServer的start方法同init方法一样来自LifecycleBase，主要是改变生命周期的状态，同时触发相应的生命周期时间，具体的执行逻辑交由具体的子类startInternal方法实现：</p>
+<pre><code>public final synchronized void start() throws LifecycleException {
+
+    if (LifecycleState.STARTING_PREP.equals(state) || LifecycleState.STARTING.equals(state) ||
+            LifecycleState.STARTED.equals(state)) {
+        return;
+    }
+
+    if (state.equals(LifecycleState.NEW)) {
+        init();
+    } else if (state.equals(LifecycleState.FAILED)) {
+        stop();
+    } else if (!state.equals(LifecycleState.INITIALIZED) &amp;&amp;
+            !state.equals(LifecycleState.STOPPED)) {
+        invalidTransition(Lifecycle.BEFORE_START_EVENT);
+    }
+
+    try {
+        setStateInternal(LifecycleState.STARTING_PREP, null, false);
+        startInternal();
+        if (state.equals(LifecycleState.FAILED)) {
+            // This is a &apos;controlled&apos; failure. The component put itself into the
+            // FAILED state so call stop() to complete the clean-up.
+            stop();
+        } else if (!state.equals(LifecycleState.STARTING)) {
+            // Shouldn&apos;t be necessary but acts as a check that sub-classes are
+            // doing what they are supposed to.
+            invalidTransition(Lifecycle.AFTER_START_EVENT);
+        } else {
+            setStateInternal(LifecycleState.STARTED, null, false);
+        }
+    } catch (Throwable t) {
+        // This is an &apos;uncontrolled&apos; failure so put the component into the
+        // FAILED state and throw an exception.
+        handleSubClassException(t, &quot;lifecycleBase.startFail&quot;, toString());
+    }
+}</code></pre><p>在StandardServer的startInternal方法中会调用子组件service的start方法，并依次调用其他组件的start方法。</p>
+<pre><code>protected void startInternal() throws LifecycleException {
+
+    fireLifecycleEvent(CONFIGURE_START_EVENT, null);
+    setState(LifecycleState.STARTING);
+
+    globalNamingResources.start();
+
+    // Start our defined Services
+    synchronized (servicesLock) {
+        for (int i = 0; i &lt; services.length; i++) {
+            services[i].start();
+        }
+    }
+}</code></pre><p>所以同load方法很相似，start方法主要是实现各组件的start方法依次调用，可以用一张图来理解：<br><img src="https://raw.githubusercontent.com/jaclon-m/blogImage/master/tomcat/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90-32.png" alt="组件start"><br>还应该看到Catalina的start方法会使用前面的setAwait方法传递的值，为true时，会在8005端口监听，保证主线程一直在运行，直到收到SHUTDOWN命令</p>
+<p>这里把StandardServer的await方法贴出来，目前还不是很理解其中的机制，待回来再研究一遍。</p>
+<pre><code>public void await() {
+    // Negative values - don&apos;t wait on port - tomcat is embedded or we just don&apos;t like ports
+    if( port == -2 ) {
+        // undocumented yet - for embedding apps that are around, alive.
+        return;
+    }
+    if( port==-1 ) {
+        try {
+            awaitThread = Thread.currentThread();
+            while(!stopAwait) {
+                try {
+                    Thread.sleep( 10000 );
+                } catch( InterruptedException ex ) {
+                    // continue and check the flag
+                }
+            }
+        } finally {
+            awaitThread = null;
+        }
+        return;
+    }
+
+    // Set up a server socket to wait on
+    try {
+        awaitSocket = new ServerSocket(port, 1,
+                InetAddress.getByName(address));
+    } catch (IOException e) {
+        log.error(&quot;StandardServer.await: create[&quot; + address
+                           + &quot;:&quot; + port
+                           + &quot;]: &quot;, e);
+        return;
+    }
+
+    try {
+        awaitThread = Thread.currentThread();
+
+        // Loop waiting for a connection and a valid command
+        while (!stopAwait) {
+            ServerSocket serverSocket = awaitSocket;
+            if (serverSocket == null) {
+                break;
+            }
+
+            // Wait for the next connection
+            Socket socket = null;
+            StringBuilder command = new StringBuilder();
+            try {
+                InputStream stream;
+                long acceptStartTime = System.currentTimeMillis();
+                try {
+                    socket = serverSocket.accept();
+                    socket.setSoTimeout(10 * 1000);  // Ten seconds
+                    stream = socket.getInputStream();
+                } catch (SocketTimeoutException ste) {
+                    // This should never happen but bug 56684 suggests that
+                    // it does.
+                    log.warn(sm.getString(&quot;standardServer.accept.timeout&quot;,
+                            Long.valueOf(System.currentTimeMillis() - acceptStartTime)), ste);
+                    continue;
+                } catch (AccessControlException ace) {
+                    log.warn(&quot;StandardServer.accept security exception: &quot;
+                            + ace.getMessage(), ace);
+                    continue;
+                } catch (IOException e) {
+                    if (stopAwait) {
+                        // Wait was aborted with socket.close()
+                        break;
+                    }
+                    log.error(&quot;StandardServer.await: accept: &quot;, e);
+                    break;
+                }
+
+                // Read a set of characters from the socket
+                int expected = 1024; // Cut off to avoid DoS attack
+                while (expected &lt; shutdown.length()) {
+                    if (random == null)
+                        random = new Random();
+                    expected += (random.nextInt() % 1024);
+                }
+                while (expected &gt; 0) {
+                    int ch = -1;
+                    try {
+                        ch = stream.read();
+                    } catch (IOException e) {
+                        log.warn(&quot;StandardServer.await: read: &quot;, e);
+                        ch = -1;
+                    }
+                    // Control character or EOF (-1) terminates loop
+                    if (ch &lt; 32 || ch == 127) {
+                        break;
+                    }
+                    command.append((char) ch);
+                    expected--;
+                }
+            } finally {
+                // Close the socket now that we are done with it
+                try {
+                    if (socket != null) {
+                        socket.close();
+                    }
+                } catch (IOException e) {
+                    // Ignore
+                }
+            }
+
+            // Match against our command string
+            boolean match = command.toString().equals(shutdown);
+            if (match) {
+                log.info(sm.getString(&quot;standardServer.shutdownViaPort&quot;));
+                break;
+            } else
+                log.warn(&quot;StandardServer.await: Invalid command &apos;&quot;
+                        + command.toString() + &quot;&apos; received&quot;);
+        }
+    } finally {
+        ServerSocket serverSocket = awaitSocket;
+        awaitThread = null;
+        awaitSocket = null;
+
+        // Close the server socket and return
+        if (serverSocket != null) {
+            try {
+                serverSocket.close();
+            } catch (IOException e) {
+                // Ignore
+            }
+        }
+    }
+}</code></pre></div><div class="article-tags size-small mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/bat%E5%91%BD%E4%BB%A4/">bat命令</a><a class="link-muted mr-2" rel="tag" href="/tags/tomcat/">tomcat</a></div><!--!--></article></div><div class="card"><div class="card-content"><h3 class="menu-label has-text-centered">Gefällt Ihnen der Artikel? Unterstützen Sie den Autor mit</h3><div class="buttons is-centered"><a class="button is-info donate"><span class="icon is-small"><i class="fab fa-alipay"></i></span><span>Alipay</span><span class="qrcode"><img src="/" alt="Alipay"></span></a><a class="button is-success donate"><span class="icon is-small"><i class="fab fa-weixin"></i></span><span>Wechat</span><span class="qrcode"><img src="/" alt="Wechat"></span></a></div></div></div><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2018/11/04/tomcat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-Server%E7%9A%84%E5%88%9B%E5%BB%BA/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">tomcat源码解析-Server的创建</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2018/10/29/tomat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B%EF%BC%88%E4%B8%80%EF%BC%89/"><span class="level-item">tomat源码解析-启动过程（一）</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">Kommentare</h3><div class="content" id="valine-thread"></div><script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script><script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script><script>new Valine({
+            el: '#valine-thread' ,
+            appId: "vdKGC2peyYNqLJP9zJe3AqHe-gzGzoHsz",
+            appKey: "szUoRSxrU2ILylrufEgnWQTw",
+            
+            avatar: "mm",
+            
+            meta: ["nick","mail","link"],
+            pageSize: 10,
+            lang: "zh-Hans",
+            
+            highlight: true,
+            
+            
+            
+            
+            
+            requiredFields: [],
+        });</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-4-widescreen  order-1"><div class="card widget"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar" src="https://s1.ax1x.com/2020/06/08/thQzdS.th.jpg" alt="Jacklon"></figure><p class="title is-size-4 is-block line-height-inherit">Jacklon</p><p class="is-size-6 is-block">非典型程序员一枚</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>Beijing,China</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">Posts</p><a href="/archives"><p class="title">20</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">Kategorien</p><a href="/categories"><p class="title">14</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">Tags</p><a href="/tags"><p class="title">9</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/jaclon-m" target="_blank" rel="noopener">Folgen</a></div><div class="level is-mobile"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Facebook" href="https://facebook.com"><i class="fab fa-facebook"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Twitter" href="https://twitter.com"><i class="fab fa-twitter"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Dribbble" href="https://dribbble.com"><i class="fab fa-dribbble"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="RSS" href="/"><i class="fas fa-rss"></i></a></div></div></div><div class="card widget" id="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">Katalog</h3><ul class="menu-list"><li><a class="is-flex" href="#main方法"><span class="mr-2">1</span><span>main方法</span></a></li><li><a class="is-flex" href="#init方法"><span class="mr-2">2</span><span>init方法</span></a><ul class="menu-list"><li><a class="is-flex" href="#1-initClassLoaders方法"><span class="mr-2">2.1</span><span>1. initClassLoaders方法</span></a></li><li><a class="is-flex" href="#2-createClassLoader"><span class="mr-2">2.2</span><span>2. createClassLoader()</span></a></li><li><a class="is-flex" href="#3-SecurityClassLoad-securityClassLoad-catalinaLoader"><span class="mr-2">2.3</span><span>3 *SecurityClassLoad.securityClassLoad(catalinaLoader)</span></a></li><li><a class="is-flex" href="#4-通过反射实例化catalina"><span class="mr-2">2.4</span><span>4. 通过反射实例化catalina</span></a></li></ul></li><li><a class="is-flex" href="#setAwait-方法"><span class="mr-2">3</span><span>setAwait()方法</span></a></li><li><a class="is-flex" href="#load-方法"><span class="mr-2">4</span><span>load()方法</span></a><ul class="menu-list"><li><a class="is-flex" href="#来看createStartDigester方法"><span class="mr-2">4.1</span><span>来看createStartDigester方法</span></a></li><li><a class="is-flex" href="#getServer-init"><span class="mr-2">4.2</span><span>getServer().init()</span></a></li></ul></li><li><a class="is-flex" href="#start-方法"><span class="mr-2">5</span><span>start()方法</span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.svg" alt="Jacklon&#039;s Blog" height="28"></a><p class="size-small"><span>&copy; 2020 Jacklon</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script>moment.locale("zh-Hans");</script><script>var IcarusThemeSettings = {
+            site: {
+                url: 'http://59.110.153.50',
+                external_link: {"enable":true,"exclude":[]}
+            },
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script src="/js/animation.js"></script><a id="back-to-top" title="Zurück nach oben" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="Tippen Sie etwas..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"Tippen Sie etwas...","untitled":"(Untitled)","posts":"Posts","pages":"Pages","categories":"Kategorien","tags":"Tags"});
+        });</script></body></html>

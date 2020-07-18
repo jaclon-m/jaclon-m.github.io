@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="generator" content="Hexo 4.2.1"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>tomat源码解析-启动过程（一） - Jacklon&#039;s Blog</title><meta description="bat简单语法关于bat的介绍和使用已经在前面给出，这里再介绍一下他的简单用法。    DOS命令 解释    rem 该命令用于注释，rem起始的行不会作为代码执行   pause 该命令用于暂停正在执行的批处理文件，并且提示用户按键，然后程序继续执行   echo 该命令用于在dos控制台显示一段文本，相当于print，如果想要显示环境变量需要在环境变量前后加上%，例如显示操作系统echo %"><meta property="og:type" content="blog"><meta property="og:title" content="tomat源码解析-启动过程（一）"><meta property="og:url" content="http://59.110.153.50/2018/10/29/tomat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B%EF%BC%88%E4%B8%80%EF%BC%89/"><meta property="og:site_name" content="Jacklon&#039;s Blog"><meta property="og:description" content="bat简单语法关于bat的介绍和使用已经在前面给出，这里再介绍一下他的简单用法。    DOS命令 解释    rem 该命令用于注释，rem起始的行不会作为代码执行   pause 该命令用于暂停正在执行的批处理文件，并且提示用户按键，然后程序继续执行   echo 该命令用于在dos控制台显示一段文本，相当于print，如果想要显示环境变量需要在环境变量前后加上%，例如显示操作系统echo %"><meta property="og:image" content="http://59.110.153.50/img/og_image.png"><meta property="article:published_time" content="2018-10-29T03:35:05.000Z"><meta property="article:modified_time" content="2020-06-15T16:29:02.472Z"><meta property="article:author" content="Jacklon"><meta property="article:tag" content="bat命令"><meta property="article:tag" content="tomcat"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://59.110.153.50/2018/10/29/tomat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B%EF%BC%88%E4%B8%80%EF%BC%89/"},"headline":"Jacklon's Blog","image":["http://59.110.153.50/img/og_image.png"],"datePublished":"2018-10-29T03:35:05.000Z","dateModified":"2020-06-15T16:29:02.472Z","author":{"@type":"Person","name":"Jacklon"},"description":"bat简单语法关于bat的介绍和使用已经在前面给出，这里再介绍一下他的简单用法。    DOS命令 解释    rem 该命令用于注释，rem起始的行不会作为代码执行   pause 该命令用于暂停正在执行的批处理文件，并且提示用户按键，然后程序继续执行   echo 该命令用于在dos控制台显示一段文本，相当于print，如果想要显示环境变量需要在环境变量前后加上%，例如显示操作系统echo %"}</script><link rel="canonical" href="http://59.110.153.50/2018/10/29/tomat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B%EF%BC%88%E4%B8%80%EF%BC%89/"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/dark.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><script>var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?65d4748cd6417633e46d97986b1808cf";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();</script><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.svg" alt="Jacklon&#039;s Blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">Home</a><a class="navbar-item" href="/archives">Archives</a><a class="navbar-item" href="/categories">Categories</a><a class="navbar-item" href="/tags">Tags</a><a class="navbar-item" href="/about">About</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="Katalog" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="Suche" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><time class="level-item" dateTime="2018-10-29T03:35:05.000Z" title="2018-10-29T03:35:05.000Z">2018-10-29</time><span class="level-item"><a class="link-muted" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/">计算机网络</a><span> / </span><a class="link-muted" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/tomcat/">tomcat</a></span><span class="level-item">42 minutes lesen (Über 6287 Worte)</span></div></div><h1 class="title is-3 is-size-4-mobile">tomat源码解析-启动过程（一）</h1><div class="content"><h2 id="bat简单语法"><a href="#bat简单语法" class="headerlink" title="bat简单语法"></a>bat简单语法</h2><p>关于bat的介绍和使用已经在前面给出，这里再介绍一下他的简单用法。</p>
+<table>
+<thead>
+<tr>
+<th>DOS命令</th>
+<th>解释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>rem</td>
+<td>该命令用于注释，rem起始的行不会作为代码执行</td>
+</tr>
+<tr>
+<td>pause</td>
+<td>该命令用于暂停正在执行的批处理文件，并且提示用户按键，然后程序继续执行</td>
+</tr>
+<tr>
+<td>echo</td>
+<td>该命令用于在dos控制台显示一段文本，相当于print，如果想要显示环境变量需要在环境变量前后加上%，例如显示操作系统echo %OS%</td>
+</tr>
+<tr>
+<td>echo off</td>
+<td>该命令可以防止将批处理文件中的具体命令打印出来，而只会输出执行结果</td>
+</tr>
+<tr>
+<td>@echo off</td>
+<td>该命令与echo off相同，唯一的区别在于@echo off不仅会隐藏具体命令还会连’echo off’这个自身命令也隐藏起来</td>
+</tr>
+<tr>
+<td>set</td>
+<td>设置环境变量，例如set A = 100设置A变量为100</td>
+</tr>
+<tr>
+<td>label</td>
+<td>使用’:’(冒号)来设置一个标签，供给goto命令使用，例如”：init”代表一个init标签</td>
+</tr>
+<tr>
+<td>goto</td>
+<td>该命令使正在执行的命令强制跳转到他指定的标签。例如我需要跳转指定A标签下的命令，如下：goto A</td>
+</tr>
+<tr>
+<td>not</td>
+<td>该命令用来取反，相当于逻辑非</td>
+</tr>
+<tr>
+<td>if</td>
+<td>该命令表示判断</td>
+</tr>
+<tr>
+<td>exist</td>
+<td>该命令通常用来测试文件是否存在，一般和if一起使用</td>
+</tr>
+<tr>
+<td>shift</td>
+<td>该命令用来将参数后移一位即将%2%赋值给%1%，%3%赋值给%2%，也可以理解为参数列表左移即删除现有参数列表的第一位</td>
+</tr>
+<tr>
+<td>call</td>
+<td>该命令用来调用另外一条命令</td>
+</tr>
+<tr>
+<td>setLocal</td>
+<td>该命令表示该批处理文件中修改的环境变量只在本文件中起作用，或者直到endLocal命令出现，被修改的环境变量才恢复原状</td>
+</tr>
+<tr>
+<td>start</td>
+<td>重新开启一个dos窗口</td>
+</tr>
+</tbody></table>
+<a id="more"></a>
+
+<h2 id="startup-bat"><a href="#startup-bat" class="headerlink" title="startup.bat"></a>startup.bat</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br></pre></td><td class="code"><pre><span class="line">@echo off</span><br><span class="line">rem Licensed to the Apache Software Foundation (ASF) under one or more</span><br><span class="line">rem contributor license agreements.  See the NOTICE file distributed with</span><br><span class="line">rem this work for additional information regarding copyright ownership.</span><br><span class="line">rem The ASF licenses this file to You under the Apache License, Version 2.0</span><br><span class="line">rem (the &quot;License&quot;); you may not use this file except in compliance with</span><br><span class="line">rem the License.  You may obtain a copy of the License at</span><br><span class="line">rem</span><br><span class="line">rem     http:&#x2F;&#x2F;www.apache.org&#x2F;licenses&#x2F;LICENSE-2.0</span><br><span class="line">rem</span><br><span class="line">rem Unless required by applicable law or agreed to in writing, software</span><br><span class="line">rem distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span><br><span class="line">rem WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span><br><span class="line">rem See the License for the specific language governing permissions and</span><br><span class="line">rem limitations under the License.</span><br><span class="line"></span><br><span class="line">rem ---------------------------------------------------------------------------</span><br><span class="line">rem Start script for the CATALINA Server</span><br><span class="line">rem ---------------------------------------------------------------------------</span><br><span class="line"></span><br><span class="line">setlocal</span><br><span class="line"></span><br><span class="line">rem Guess CATALINA_HOME if not defined</span><br><span class="line">set &quot;CURRENT_DIR&#x3D;%cd%&quot;</span><br><span class="line">if not &quot;%CATALINA_HOME%&quot; &#x3D;&#x3D; &quot;&quot; goto gotHome</span><br><span class="line">set &quot;CATALINA_HOME&#x3D;%CURRENT_DIR%&quot;</span><br><span class="line">if exist &quot;%CATALINA_HOME%\bin\catalina.bat&quot; goto okHome</span><br><span class="line">cd ..</span><br><span class="line">set &quot;CATALINA_HOME&#x3D;%cd%&quot;</span><br><span class="line">cd &quot;%CURRENT_DIR%&quot;</span><br><span class="line">:gotHome</span><br><span class="line">if exist &quot;%CATALINA_HOME%\bin\catalina.bat&quot; goto okHome</span><br><span class="line">echo The CATALINA_HOME environment variable is not defined correctly</span><br><span class="line">echo This environment variable is needed to run this program</span><br><span class="line">goto end</span><br><span class="line">:okHome</span><br><span class="line"></span><br><span class="line">set &quot;EXECUTABLE&#x3D;%CATALINA_HOME%\bin\catalina.bat&quot;</span><br><span class="line"></span><br><span class="line">rem Check that target executable exists</span><br><span class="line">if exist &quot;%EXECUTABLE%&quot; goto okExec</span><br><span class="line">echo Cannot find &quot;%EXECUTABLE%&quot;</span><br><span class="line">echo This file is needed to run this program</span><br><span class="line">goto end</span><br><span class="line">:okExec</span><br><span class="line"></span><br><span class="line">rem Get remaining unshifted command line arguments and save them in the</span><br><span class="line">set CMD_LINE_ARGS&#x3D;</span><br><span class="line">:setArgs</span><br><span class="line">if &quot;&quot;%1&quot;&quot;&#x3D;&#x3D;&quot;&quot;&quot;&quot; goto doneSetArgs</span><br><span class="line">set CMD_LINE_ARGS&#x3D;%CMD_LINE_ARGS% %1</span><br><span class="line">shift</span><br><span class="line">goto setArgs</span><br><span class="line">:doneSetArgs</span><br><span class="line"></span><br><span class="line">call &quot;%EXECUTABLE%&quot; start %CMD_LINE_ARGS%</span><br><span class="line"></span><br><span class="line">:end</span><br></pre></td></tr></table></figure>
+
+<p>@echo off，此语句常用于开头，表示不显示所有的命令行信息，包括此句。<br>setlocal，启动批处理文件中环境变量的本地化，本地化将持续到出现匹配的endlocal命令或者到达批处理文件结尾为止。<br>下面将文件拆成几段来看：<br><strong>第一段</strong>：判断CATALINA_HOME是否定义</p>
+<pre><code>rem Guess CATALINA_HOME if not defined
+set &quot;CURRENT_DIR=%cd%&quot;
+if not &quot;%CATALINA_HOME%&quot; == &quot;&quot; goto gotHome
+set &quot;CATALINA_HOME=%CURRENT_DIR%&quot;
+if exist &quot;%CATALINA_HOME%\bin\catalina.bat&quot; goto okHome
+cd ..
+set &quot;CATALINA_HOME=%cd%&quot;
+cd &quot;%CURRENT_DIR%&quot;</code></pre><ol>
+<li>设置变量CURRENT_DIR为当前目录，一般打开的就是tomcat的bin目录，./apache-tomcat-x.x.xx/bin；</li>
+<li>判断系统变量CATALINA_HOME是不是空串(一般安装tomcat时，我们都会配置CATALINA_HOME环境变量，不知有没有印象呢)，如果是就跳转到gotHome标签执行，假设CATALINA_HOME环境变量没有定义，就继续往下；</li>
+<li>设置CATALINA_HOME为CURRENT_DIR指向的目录，也就是bin目录(./apache-tomcat-x.x.xx/bin)；</li>
+<li>判断CATALINA_HOME\bin\catalina.bat文件是否存在，也就是 ./apache-tomcat-x.x.xx/bin/bin/catalina.bat，5 如果存在就转向okHome标签，显然是不存在的，所以不会跳转到okHome，继续往下；</li>
+<li>不存在的话，CATALINA_HOME取上级目录的值，也就是(./apache-tomcat-x.x.xx/)；</li>
+<li>设置CATALINA_HOME指向当前目录，也就是Tomcat的根目录；</li>
+<li>进入 CURRENT_DIR(./apache-tomcat-x.x.xx/bin)；</li>
+</ol>
+<p><strong>第二段</strong>：执行gotHome标签</p>
+<pre><code>:gotHome
+if exist &quot;%CATALINA_HOME%\bin\catalina.bat&quot; goto okHome
+echo The CATALINA_HOME environment variable is not defined correctly
+echo This environment variable is needed to run this program
+goto end</code></pre><p>通过上面的设置，CATALINA_HOME的值已经是: ./apache-tomcat-x.x.xx/，这时判断./apache-tomcat-x.x.xx/catalina.bat 脚本是否存在，如果不存在，则输出一些信息结束，一般这时是可以找到的，所以跳转到okHome标签处；<br><strong>第三段</strong>：执行okHome标签</p>
+<pre><code>:okHome
+
+set &quot;EXECUTABLE=%CATALINA_HOME%\bin\catalina.bat&quot;</code></pre><p>设置EXECUTABLE变量指向为catalina.bat脚本；</p>
+<p><strong>第四段</strong>：再次检查catalina.bat是否存在</p>
+<pre><code>rem Check that target executable exists
+if exist &quot;%EXECUTABLE%&quot; goto okExec
+echo Cannot find &quot;%EXECUTABLE%&quot;
+echo This file is needed to run this program
+goto end</code></pre><p>双重保险继续判断下EXECUTABLE指向的catalina.bat文件是否存在，不存在就输出提示信息并且结束，存在就跳转到okExec标签处：</p>
+<p><strong>第五段</strong>：</p>
+<pre><code>:okExec
+
+rem Get remaining unshifted command line arguments and save them in the
+set CMD_LINE_ARGS=
+:setArgs
+if &quot;&quot;%1&quot;&quot;==&quot;&quot;&quot;&quot; goto doneSetArgs
+set CMD_LINE_ARGS=%CMD_LINE_ARGS% %1
+shift
+goto setArgs
+:doneSetArgs
+
+call &quot;%EXECUTABLE%&quot; start %CMD_LINE_ARGS%</code></pre><p>set CMD_LINE_ARGS=表示清空变量CMD_LINE_ARGS；<br>执行setArgs标签；<br>第一个变量(%1%)为空字符串，那么就跳转到doneSetArgs标签，一般情况下，直接运行startup.bat，是没有传递任何参数，所以是跳转到doneSetArgs标签，由此也可以猜想出，如果不是使用双击执行的话，使用命令行启动startup.bat那么是可以传递参数的；<br>跳转到doneSetArgs，调用EXECUTABLE指向的文件，也就是catalina.bat文件，同时传递start参数，因为CMD_LINE_ARGS为空，所以只传递了一个start参数；<br><strong>最后：</strong>end标签</p>
+<pre><code>:end</code></pre><p>判断失败跳转的标签，是参数不正确的时候的结束标志。</p>
+<h2 id="catalina-bat"><a href="#catalina-bat" class="headerlink" title="catalina.bat"></a>catalina.bat</h2><p>去掉前面的注释</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br></pre></td><td class="code"><pre><span class="line">setlocal</span><br><span class="line"></span><br><span class="line">rem Suppress Terminate batch job on CTRL+C</span><br><span class="line">if not &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;run&quot;&quot; goto mainEntry</span><br><span class="line">if &quot;%TEMP%&quot; &#x3D;&#x3D; &quot;&quot; goto mainEntry</span><br><span class="line">if exist &quot;%TEMP%\%~nx0.run&quot; goto mainEntry</span><br><span class="line">echo Y&gt;&quot;%TEMP%\%~nx0.run&quot;</span><br><span class="line">if not exist &quot;%TEMP%\%~nx0.run&quot; goto mainEntry</span><br><span class="line">echo Y&gt;&quot;%TEMP%\%~nx0.Y&quot;</span><br><span class="line">call &quot;%~f0&quot; %* &lt;&quot;%TEMP%\%~nx0.Y&quot;</span><br><span class="line">rem Use provided errorlevel</span><br><span class="line">set RETVAL&#x3D;%ERRORLEVEL%</span><br><span class="line">del &#x2F;Q &quot;%TEMP%\%~nx0.Y&quot; &gt;NUL 2&gt;&amp;1</span><br><span class="line">exit &#x2F;B %RETVAL%</span><br><span class="line">:mainEntry</span><br><span class="line">del &#x2F;Q &quot;%TEMP%\%~nx0.run&quot; &gt;NUL 2&gt;&amp;1</span><br><span class="line"></span><br><span class="line">rem Guess CATALINA_HOME if not defined</span><br><span class="line">set &quot;CURRENT_DIR&#x3D;%cd%&quot;</span><br><span class="line">if not &quot;%CATALINA_HOME%&quot; &#x3D;&#x3D; &quot;&quot; goto gotHome</span><br><span class="line">set &quot;CATALINA_HOME&#x3D;%CURRENT_DIR%&quot;</span><br><span class="line">if exist &quot;%CATALINA_HOME%\bin\catalina.bat&quot; goto okHome</span><br><span class="line">cd ..</span><br><span class="line">set &quot;CATALINA_HOME&#x3D;%cd%&quot;</span><br><span class="line">cd &quot;%CURRENT_DIR%&quot;</span><br><span class="line">:gotHome</span><br><span class="line"></span><br><span class="line">if exist &quot;%CATALINA_HOME%\bin\catalina.bat&quot; goto okHome</span><br><span class="line">echo The CATALINA_HOME environment variable is not defined correctly</span><br><span class="line">echo This environment variable is needed to run this program</span><br><span class="line">goto end</span><br><span class="line">:okHome</span><br><span class="line"></span><br><span class="line">rem Copy CATALINA_BASE from CATALINA_HOME if not defined</span><br><span class="line">if not &quot;%CATALINA_BASE%&quot; &#x3D;&#x3D; &quot;&quot; goto gotBase</span><br><span class="line">set &quot;CATALINA_BASE&#x3D;%CATALINA_HOME%&quot;</span><br><span class="line">:gotBase</span><br><span class="line"></span><br><span class="line">rem Ensure that neither CATALINA_HOME nor CATALINA_BASE contains a semi-colon</span><br><span class="line">rem as this is used as the separator in the classpath and Java provides no</span><br><span class="line">rem mechanism for escaping if the same character appears in the path. Check this</span><br><span class="line">rem by replacing all occurrences of &#39;;&#39; with &#39;&#39; and checking that neither</span><br><span class="line">rem CATALINA_HOME nor CATALINA_BASE have changed</span><br><span class="line">if &quot;%CATALINA_HOME%&quot; &#x3D;&#x3D; &quot;%CATALINA_HOME:;&#x3D;%&quot; goto homeNoSemicolon</span><br><span class="line">echo Using CATALINA_HOME:   &quot;%CATALINA_HOME%&quot;</span><br><span class="line">echo Unable to start as CATALINA_HOME contains a semicolon (;) character</span><br><span class="line">goto end</span><br><span class="line">:homeNoSemicolon</span><br><span class="line"></span><br><span class="line">if &quot;%CATALINA_BASE%&quot; &#x3D;&#x3D; &quot;%CATALINA_BASE:;&#x3D;%&quot; goto baseNoSemicolon</span><br><span class="line">echo Using CATALINA_BASE:   &quot;%CATALINA_BASE%&quot;</span><br><span class="line">echo Unable to start as CATALINA_BASE contains a semicolon (;) character</span><br><span class="line">goto end</span><br><span class="line">:baseNoSemicolon</span><br><span class="line"></span><br><span class="line">rem Ensure that any user defined CLASSPATH variables are not used on startup,</span><br><span class="line">rem but allow them to be specified in setenv.bat, in rare case when it is needed.</span><br><span class="line">set CLASSPATH&#x3D;</span><br><span class="line"></span><br><span class="line">rem Get standard environment variables</span><br><span class="line">if not exist &quot;%CATALINA_BASE%\bin\setenv.bat&quot; goto checkSetenvHome</span><br><span class="line">call &quot;%CATALINA_BASE%\bin\setenv.bat&quot;</span><br><span class="line">goto setenvDone</span><br><span class="line">:checkSetenvHome</span><br><span class="line">if exist &quot;%CATALINA_HOME%\bin\setenv.bat&quot; call &quot;%CATALINA_HOME%\bin\setenv.bat&quot;</span><br><span class="line">:setenvDone</span><br><span class="line"></span><br><span class="line">rem Get standard Java environment variables</span><br><span class="line">if exist &quot;%CATALINA_HOME%\bin\setclasspath.bat&quot; goto okSetclasspath</span><br><span class="line">echo Cannot find &quot;%CATALINA_HOME%\bin\setclasspath.bat&quot;</span><br><span class="line">echo This file is needed to run this program</span><br><span class="line">goto end</span><br><span class="line">:okSetclasspath</span><br><span class="line">call &quot;%CATALINA_HOME%\bin\setclasspath.bat&quot; %1</span><br><span class="line">if errorlevel 1 goto end</span><br><span class="line"></span><br><span class="line">rem Add on extra jar file to CLASSPATH</span><br><span class="line">rem Note that there are no quotes as we do not want to introduce random</span><br><span class="line">rem quotes into the CLASSPATH</span><br><span class="line">if &quot;%CLASSPATH%&quot; &#x3D;&#x3D; &quot;&quot; goto emptyClasspath</span><br><span class="line">set &quot;CLASSPATH&#x3D;%CLASSPATH%;&quot;</span><br><span class="line">:emptyClasspath</span><br><span class="line">set &quot;CLASSPATH&#x3D;%CLASSPATH%%CATALINA_HOME%\bin\bootstrap.jar&quot;</span><br><span class="line"></span><br><span class="line">if not &quot;%CATALINA_TMPDIR%&quot; &#x3D;&#x3D; &quot;&quot; goto gotTmpdir</span><br><span class="line">set &quot;CATALINA_TMPDIR&#x3D;%CATALINA_BASE%\temp&quot;</span><br><span class="line">:gotTmpdir</span><br><span class="line"></span><br><span class="line">rem Add tomcat-juli.jar to classpath</span><br><span class="line">rem tomcat-juli.jar can be over-ridden per instance</span><br><span class="line">if not exist &quot;%CATALINA_BASE%\bin\tomcat-juli.jar&quot; goto juliClasspathHome</span><br><span class="line">set &quot;CLASSPATH&#x3D;%CLASSPATH%;%CATALINA_BASE%\bin\tomcat-juli.jar&quot;</span><br><span class="line">goto juliClasspathDone</span><br><span class="line">:juliClasspathHome</span><br><span class="line">set &quot;CLASSPATH&#x3D;%CLASSPATH%;%CATALINA_HOME%\bin\tomcat-juli.jar&quot;</span><br><span class="line">:juliClasspathDone</span><br><span class="line"></span><br><span class="line">if not &quot;%JSSE_OPTS%&quot; &#x3D;&#x3D; &quot;&quot; goto gotJsseOpts</span><br><span class="line">set JSSE_OPTS&#x3D;&quot;-Djdk.tls.ephemeralDHKeySize&#x3D;2048&quot;</span><br><span class="line">:gotJsseOpts</span><br><span class="line">set &quot;JAVA_OPTS&#x3D;%JAVA_OPTS% %JSSE_OPTS%&quot;</span><br><span class="line"></span><br><span class="line">if not &quot;%LOGGING_CONFIG%&quot; &#x3D;&#x3D; &quot;&quot; goto noJuliConfig</span><br><span class="line">set LOGGING_CONFIG&#x3D;-Dnop</span><br><span class="line">if not exist &quot;%CATALINA_BASE%\conf\logging.properties&quot; goto noJuliConfig</span><br><span class="line">set LOGGING_CONFIG&#x3D;-Djava.util.logging.config.file&#x3D;&quot;%CATALINA_BASE%\conf\logging.properties&quot;</span><br><span class="line">:noJuliConfig</span><br><span class="line">set &quot;JAVA_OPTS&#x3D;%JAVA_OPTS% %LOGGING_CONFIG%&quot;</span><br><span class="line"></span><br><span class="line">if not &quot;%LOGGING_MANAGER%&quot; &#x3D;&#x3D; &quot;&quot; goto noJuliManager</span><br><span class="line">set LOGGING_MANAGER&#x3D;-Djava.util.logging.manager&#x3D;org.apache.juli.ClassLoaderLogManager</span><br><span class="line">:noJuliManager</span><br><span class="line">set &quot;JAVA_OPTS&#x3D;%JAVA_OPTS% %LOGGING_MANAGER%&quot;</span><br><span class="line"></span><br><span class="line">rem ----- Execute The Requested Command ---------------------------------------</span><br><span class="line"></span><br><span class="line">echo Using CATALINA_BASE:   &quot;%CATALINA_BASE%&quot;</span><br><span class="line">echo Using CATALINA_HOME:   &quot;%CATALINA_HOME%&quot;</span><br><span class="line">echo Using CATALINA_TMPDIR: &quot;%CATALINA_TMPDIR%&quot;</span><br><span class="line">if &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;debug&quot;&quot; goto use_jdk</span><br><span class="line">echo Using JRE_HOME:        &quot;%JRE_HOME%&quot;</span><br><span class="line">goto java_dir_displayed</span><br><span class="line">:use_jdk</span><br><span class="line">echo Using JAVA_HOME:       &quot;%JAVA_HOME%&quot;</span><br><span class="line">:java_dir_displayed</span><br><span class="line">echo Using CLASSPATH:       &quot;%CLASSPATH%&quot;</span><br><span class="line"></span><br><span class="line">set _EXECJAVA&#x3D;%_RUNJAVA%</span><br><span class="line">set MAINCLASS&#x3D;org.apache.catalina.startup.Bootstrap</span><br><span class="line">set ACTION&#x3D;start</span><br><span class="line">set SECURITY_POLICY_FILE&#x3D;</span><br><span class="line">set DEBUG_OPTS&#x3D;</span><br><span class="line">set JPDA&#x3D;</span><br><span class="line"></span><br><span class="line">if not &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;jpda&quot;&quot; goto noJpda</span><br><span class="line">set JPDA&#x3D;jpda</span><br><span class="line">if not &quot;%JPDA_TRANSPORT%&quot; &#x3D;&#x3D; &quot;&quot; goto gotJpdaTransport</span><br><span class="line">set JPDA_TRANSPORT&#x3D;dt_socket</span><br><span class="line">:gotJpdaTransport</span><br><span class="line">if not &quot;%JPDA_ADDRESS%&quot; &#x3D;&#x3D; &quot;&quot; goto gotJpdaAddress</span><br><span class="line">set JPDA_ADDRESS&#x3D;localhost:8000</span><br><span class="line">:gotJpdaAddress</span><br><span class="line">if not &quot;%JPDA_SUSPEND%&quot; &#x3D;&#x3D; &quot;&quot; goto gotJpdaSuspend</span><br><span class="line">set JPDA_SUSPEND&#x3D;n</span><br><span class="line">:gotJpdaSuspend</span><br><span class="line">if not &quot;%JPDA_OPTS%&quot; &#x3D;&#x3D; &quot;&quot; goto gotJpdaOpts</span><br><span class="line">set JPDA_OPTS&#x3D;-agentlib:jdwp&#x3D;transport&#x3D;%JPDA_TRANSPORT%,address&#x3D;%JPDA_ADDRESS%,server&#x3D;y,suspend&#x3D;%JPDA_SUSPEND%</span><br><span class="line">:gotJpdaOpts</span><br><span class="line">shift</span><br><span class="line">:noJpda</span><br><span class="line"></span><br><span class="line">if &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;debug&quot;&quot; goto doDebug</span><br><span class="line">if &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;run&quot;&quot; goto doRun</span><br><span class="line">if &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;start&quot;&quot; goto doStart</span><br><span class="line">if &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;stop&quot;&quot; goto doStop</span><br><span class="line">if &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;configtest&quot;&quot; goto doConfigTest</span><br><span class="line">if &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;version&quot;&quot; goto doVersion</span><br><span class="line"></span><br><span class="line">echo Usage:  catalina ( commands ... )</span><br><span class="line">echo commands:</span><br><span class="line">echo   debug             Start Catalina in a debugger</span><br><span class="line">echo   debug -security   Debug Catalina with a security manager</span><br><span class="line">echo   jpda start        Start Catalina under JPDA debugger</span><br><span class="line">echo   run               Start Catalina in the current window</span><br><span class="line">echo   run -security     Start in the current window with security manager</span><br><span class="line">echo   start             Start Catalina in a separate window</span><br><span class="line">echo   start -security   Start in a separate window with security manager</span><br><span class="line">echo   stop              Stop Catalina</span><br><span class="line">echo   configtest        Run a basic syntax check on server.xml</span><br><span class="line">echo   version           What version of tomcat are you running?</span><br><span class="line">goto end</span><br><span class="line"></span><br><span class="line">:doDebug</span><br><span class="line">shift</span><br><span class="line">set _EXECJAVA&#x3D;%_RUNJDB%</span><br><span class="line">set DEBUG_OPTS&#x3D;-sourcepath &quot;%CATALINA_HOME%\..\..\java&quot;</span><br><span class="line">if not &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;-security&quot;&quot; goto execCmd</span><br><span class="line">shift</span><br><span class="line">echo Using Security Manager</span><br><span class="line">set &quot;SECURITY_POLICY_FILE&#x3D;%CATALINA_BASE%\conf\catalina.policy&quot;</span><br><span class="line">goto execCmd</span><br><span class="line"></span><br><span class="line">:doRun</span><br><span class="line">shift</span><br><span class="line">if not &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;-security&quot;&quot; goto execCmd</span><br><span class="line">shift</span><br><span class="line">echo Using Security Manager</span><br><span class="line">set &quot;SECURITY_POLICY_FILE&#x3D;%CATALINA_BASE%\conf\catalina.policy&quot;</span><br><span class="line">goto execCmd</span><br><span class="line"></span><br><span class="line">:doStart</span><br><span class="line">shift</span><br><span class="line">if &quot;%TITLE%&quot; &#x3D;&#x3D; &quot;&quot; set TITLE&#x3D;Tomcat</span><br><span class="line">set _EXECJAVA&#x3D;start &quot;%TITLE%&quot; %_RUNJAVA%</span><br><span class="line">if not &quot;&quot;%1&quot;&quot; &#x3D;&#x3D; &quot;&quot;-security&quot;&quot; goto execCmd</span><br><span class="line">shift</span><br><span class="line">echo Using Security Manager</span><br><span class="line">set &quot;SECURITY_POLICY_FILE&#x3D;%CATALINA_BASE%\conf\catalina.policy&quot;</span><br><span class="line">goto execCmd</span><br><span class="line"></span><br><span class="line">:doStop</span><br><span class="line">shift</span><br><span class="line">set ACTION&#x3D;stop</span><br><span class="line">set CATALINA_OPTS&#x3D;</span><br><span class="line">goto execCmd</span><br><span class="line"></span><br><span class="line">:doConfigTest</span><br><span class="line">shift</span><br><span class="line">set ACTION&#x3D;configtest</span><br><span class="line">set CATALINA_OPTS&#x3D;</span><br><span class="line">goto execCmd</span><br><span class="line"></span><br><span class="line">:doVersion</span><br><span class="line">%_EXECJAVA% -classpath &quot;%CATALINA_HOME%\lib\catalina.jar&quot; org.apache.catalina.util.ServerInfo</span><br><span class="line">goto end</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">:execCmd</span><br><span class="line">rem Get remaining unshifted command line arguments and save them in the</span><br><span class="line">set CMD_LINE_ARGS&#x3D;</span><br><span class="line">:setArgs</span><br><span class="line">if &quot;&quot;%1&quot;&quot;&#x3D;&#x3D;&quot;&quot;&quot;&quot; goto doneSetArgs</span><br><span class="line">set CMD_LINE_ARGS&#x3D;%CMD_LINE_ARGS% %1</span><br><span class="line">shift</span><br><span class="line">goto setArgs</span><br><span class="line">:doneSetArgs</span><br><span class="line"></span><br><span class="line">rem Execute Java with the applicable properties</span><br><span class="line">if not &quot;%JPDA%&quot; &#x3D;&#x3D; &quot;&quot; goto doJpda</span><br><span class="line">if not &quot;%SECURITY_POLICY_FILE%&quot; &#x3D;&#x3D; &quot;&quot; goto doSecurity</span><br><span class="line">%_EXECJAVA% %JAVA_OPTS% %CATALINA_OPTS% %DEBUG_OPTS% -Djava.endorsed.dirs&#x3D;&quot;%JAVA_ENDORSED_DIRS%&quot; -classpath &quot;%CLASSPATH%&quot; -Dcatalina.base&#x3D;&quot;%CATALINA_BASE%&quot; -Dcatalina.home&#x3D;&quot;%CATALINA_HOME%&quot; -Djava.io.tmpdir&#x3D;&quot;%CATALINA_TMPDIR%&quot; %MAINCLASS% %CMD_LINE_ARGS% %ACTION%</span><br><span class="line">goto end</span><br><span class="line">:doSecurity</span><br><span class="line">%_EXECJAVA% %JAVA_OPTS% %CATALINA_OPTS% %DEBUG_OPTS% -Djava.endorsed.dirs&#x3D;&quot;%JAVA_ENDORSED_DIRS%&quot; -classpath &quot;%CLASSPATH%&quot; -Djava.security.manager -Djava.security.policy&#x3D;&#x3D;&quot;%SECURITY_POLICY_FILE%&quot; -Dcatalina.base&#x3D;&quot;%CATALINA_BASE%&quot; -Dcatalina.home&#x3D;&quot;%CATALINA_HOME%&quot; -Djava.io.tmpdir&#x3D;&quot;%CATALINA_TMPDIR%&quot; %MAINCLASS% %CMD_LINE_ARGS% %ACTION%</span><br><span class="line">goto end</span><br><span class="line">:doJpda</span><br><span class="line">if not &quot;%SECURITY_POLICY_FILE%&quot; &#x3D;&#x3D; &quot;&quot; goto doSecurityJpda</span><br><span class="line">%_EXECJAVA% %JAVA_OPTS% %JPDA_OPTS% %CATALINA_OPTS% %DEBUG_OPTS% -Djava.endorsed.dirs&#x3D;&quot;%JAVA_ENDORSED_DIRS%&quot; -classpath &quot;%CLASSPATH%&quot; -Dcatalina.base&#x3D;&quot;%CATALINA_BASE%&quot; -Dcatalina.home&#x3D;&quot;%CATALINA_HOME%&quot; -Djava.io.tmpdir&#x3D;&quot;%CATALINA_TMPDIR%&quot; %MAINCLASS% %CMD_LINE_ARGS% %ACTION%</span><br><span class="line">goto end</span><br><span class="line">:doSecurityJpda</span><br><span class="line">%_EXECJAVA% %JAVA_OPTS% %JPDA_OPTS% %CATALINA_OPTS% %DEBUG_OPTS% -Djava.endorsed.dirs&#x3D;&quot;%JAVA_ENDORSED_DIRS%&quot; -classpath &quot;%CLASSPATH%&quot; -Djava.security.manager -Djava.security.policy&#x3D;&#x3D;&quot;%SECURITY_POLICY_FILE%&quot; -Dcatalina.base&#x3D;&quot;%CATALINA_BASE%&quot; -Dcatalina.home&#x3D;&quot;%CATALINA_HOME%&quot; -Djava.io.tmpdir&#x3D;&quot;%CATALINA_TMPDIR%&quot; %MAINCLASS% %CMD_LINE_ARGS% %ACTION%</span><br><span class="line">goto end</span><br><span class="line"></span><br><span class="line">:end</span><br></pre></td></tr></table></figure>
+
+<p>第一段：</p>
+<pre><code>rem Suppress Terminate batch job on CTRL+C
+if not &quot;&quot;%1&quot;&quot; == &quot;&quot;run&quot;&quot; goto mainEntry
+if &quot;%TEMP%&quot; == &quot;&quot; goto mainEntry
+if exist &quot;%TEMP%\%~nx0.run&quot; goto mainEntry
+echo Y&gt;&quot;%TEMP%\%~nx0.run&quot;
+if not exist &quot;%TEMP%\%~nx0.run&quot; goto mainEntry
+echo Y&gt;&quot;%TEMP%\%~nx0.Y&quot;
+call &quot;%~f0&quot; %* &lt;&quot;%TEMP%\%~nx0.Y&quot;
+rem Use provided errorlevel
+set RETVAL=%ERRORLEVEL%
+del /Q &quot;%TEMP%\%~nx0.Y&quot; &gt;NUL 2&gt;&amp;1
+exit /B %RETVAL%
+:mainEntry
+del /Q &quot;%TEMP%\%~nx0.run&quot; &gt;NUL 2&gt;&amp;1</code></pre><ol>
+<li>首先注释是说，禁止使用 CTRL+C 来终止批处理任务；</li>
+<li>if not “”%1”” == “”run”” goto mainEntry，第一个参数不是run，就转向mainEntry标签，通过调用startup.bat启动的第一个参数应该是start；</li>
+<li>if “%TEMP%” == “” goto mainEntry，%TEMP%是系统的环境变量值，通常装完windows系统的话, 系统会自动配置上这个环境变量，一般是C:\Users\用户名\AppData\Local\Temp（AppData是一个隐藏文件夹）。这句是说，如果%TEMP%是空串，就转向mainEntry标签；</li>
+<li>if exist “%TEMP%%<del>nx0.run” goto mainEntry， 在批处理中，%1 表示的是程序之后的第一个参数，%0表示这个可执行程序的名称， %</del>nx0 的话就是程序的名称+扩展名，在这里就是catalina.bat（可以写一个脚本测试下）；</li>
+<li>echo Y&gt;”%TEMP%%~nx0.run”，写入字符Y到%TEMP%\catalina.bat.run 文件中；</li>
+<li>if not exist “%TEMP%%~nx0.run” goto mainEntry，又判断了一下 %TEMP%\catalina.bat.run 文件是否存在；</li>
+<li>echo Y&gt;”%TEMP%%~nx0.Y”，写入Y到%TEMP%\catalina.bat.Y，如果文件不存在， 则新建一个；</li>
+<li>call “%<del>f0” %* &lt;”%TEMP%%</del>nx0.Y”，- “%<del>f0” : 简单说就是表示当前命令的绝对路径。- “%” : %1表示第一个参数，%2表示第二个，%代表所有参数。&lt;”%TEMP%%</del>nx0.Y”是读取 %TEMP%\catalina.bat.Y文件中的内容，之后又通过call进行调用；</li>
+<li>set RETVAL=%ERRORLEVEL%，Windows中和linux一样，命令执行完之后都有自己的退出码，%ERRORLEVEL%就是取的上面的call 命令的退出码，赋值给一个变量RETVAL；</li>
+<li>del /Q “%TEMP%%~nx0.Y” &gt;NUL 2&gt;&amp;1，del 命令，很容易联想到delete， 那么/Q是什么意思呢?静默删除，不会给出任何提示，就比如Linux中的rm -f 一样。这里是删除%TEMP%\catalina.bat.Y这个文件。后面的 &gt;NUL 2&gt;&amp;1又是什么意思呢? &gt;NUL : 表示将输出重定向到 NUL 中，你什么也看不到；2&gt;&amp;1 : 2:错误输出，&amp;1: 标准输出， 意思就是将错误消息输出到标准输出中；&gt;NUL 2&gt;&amp;1 : 就是先将错误消息输出到标准输出中，然后再输出到 NUL 中；</li>
+<li>exit /B %RETVAL%，退出当前批处理， /B 指定退出时的编号， 把 RETVAL 作为 退出码, 也就是 call 执行的命令的退出码；</li>
+<li>:mainEntry del /Q “%TEMP%%~nx0.run” &gt;NUL 2&gt;&amp;1，定义一个 mainEntry 标签，然后删除临时目录中的 catalina.bat.run 文件。</li>
+</ol>
+<p>这段代码的作用就是调用本身，判断临时目录中的文件是否存在来避免二次回调自己。感觉绕的很晕，迷迷糊糊的，不知道设计者的意图。有没有大神可以帮忙解惑？</p>
+<p><strong>Tips</strong>：</p>
+<ul>
+<li>%~nx0表示这个程序的名称+扩展名（catalina.bat)</li>
+<li>%~f0表示当前命令的绝对路径</li>
+<li>“&lt;” 表示读取文件内容</li>
+<li>&gt;NUL 输出重定向到NUL中</li>
+<li>2&gt;&amp;1 将错误信息输出到标准输出中</li>
+</ul>
+<p><strong>第二段</strong>：</p>
+<pre><code>rem Guess CATALINA_HOME if not defined
+set &quot;CURRENT_DIR=%cd%&quot;
+if not &quot;%CATALINA_HOME%&quot; == &quot;&quot; goto gotHome
+set &quot;CATALINA_HOME=%CURRENT_DIR%&quot;
+if exist &quot;%CATALINA_HOME%\bin\catalina.bat&quot; goto okHome
+cd ..
+set &quot;CATALINA_HOME=%cd%&quot;
+cd &quot;%CURRENT_DIR%&quot;
+:gotHome
+
+if exist &quot;%CATALINA_HOME%\bin\catalina.bat&quot; goto okHome
+echo The CATALINA_HOME environment variable is not defined correctly
+echo This environment variable is needed to run this program
+goto end
+:okHome
+
+rem Copy CATALINA_BASE from CATALINA_HOME if not defined
+if not &quot;%CATALINA_BASE%&quot; == &quot;&quot; goto gotBase
+set &quot;CATALINA_BASE=%CATALINA_HOME%&quot;
+:gotBase</code></pre><ol>
+<li>set “CURRENT_DIR=%cd%”，设置CURRENT_DIR为当前目录bin(假如你是在bin目录中启动）；</li>
+<li>if not “%CATALINA_HOME%” == “” goto gotHome，CATALINA_HOME不是空就转向gotHome；</li>
+<li>set “CATALINA_HOME=%CURRENT_DIR%”，设置CATALINA_HOME指向CURRENT_DIR的目录，也就是bin目录；</li>
+<li>if exist “%CATALINA_HOME%\bin\catalina.bat” goto okHome，如果存在%CATALINA_HOME%\bin\catalina.bat，那么就转向okHome，否则退出到父目录，(显然不存在bin\bin\catalina.bat)；</li>
+<li>set “CATALINA_HOME=%cd%”，设置CATALINA_HOME为当前目录(也就是Tomcat的根目录）；</li>
+<li>cd “%CURRENT_DIR%”，进入CURRENT_HOME指向的目录，也就是bin目录，执行gotHome标签；</li>
+<li>if exist “%CATALINA_HOME%\bin\catalina.bat” goto okHome，gotHome标签下，如果存在%CATALINA_HOME%\bin\catalina.bat，就转向okHome，因为CATALINA_HOME现在指向的目录是Tomcat的安装目录，所以\bin\catalina.bat文件是存在的，所以转向okHome标签；</li>
+<li>if not “%CATALINA_BASE%” == “” goto gotBase，如果CATALINA_BASE变量不是空，就转向gotBase标签(显然为空)；</li>
+<li>set “CATALINA_BASE=%CATALINA_HOME%”，设置CATALINA_BASE的值等同与CATALINA_HOME的值(现在CATALINA_BASE也指向的Tomcat的根目录了)。</li>
+</ol>
+<p>这段主要是设置了两个环境变量 CATALINA_HOME 和 CATALINA_BASE。如果没有配置 CATALINA_BASE 环境变量的话, 直接引用 CATALINA_HOME 的值。</p>
+<p><strong>第三段</strong>：</p>
+<pre><code>rem Ensure that neither CATALINA_HOME nor CATALINA_BASE contains a semi-colon
+rem as this is used as the separator in the classpath and Java provides no
+rem mechanism for escaping if the same character appears in the path. Check this
+rem by replacing all occurrences of &apos;;&apos; with &apos;&apos; and checking that neither
+rem CATALINA_HOME nor CATALINA_BASE have changed
+if &quot;%CATALINA_HOME%&quot; == &quot;%CATALINA_HOME:;=%&quot; goto homeNoSemicolon
+echo Using CATALINA_HOME:   &quot;%CATALINA_HOME%&quot;
+echo Unable to start as CATALINA_HOME contains a semicolon (;) character
+goto end
+:homeNoSemicolon
+
+if &quot;%CATALINA_BASE%&quot; == &quot;%CATALINA_BASE:;=%&quot; goto baseNoSemicolon
+echo Using CATALINA_BASE:   &quot;%CATALINA_BASE%&quot;
+echo Unable to start as CATALINA_BASE contains a semicolon (;) character
+goto end
+:baseNoSemicolon</code></pre><p>这里主要是判断 CATALINA_HOME 环境变量的值 和 CATALINA_BASE 环境变量的值是否以分号为结尾，如果以分号为结尾的话，就报错退出。</p>
+<p><strong>第四段</strong>：</p>
+<pre><code>rem Ensure that any user defined CLASSPATH variables are not used on startup,
+rem but allow them to be specified in setenv.bat, in rare case when it is needed.
+set CLASSPATH=
+
+rem Get standard environment variables
+if not exist &quot;%CATALINA_BASE%\bin\setenv.bat&quot; goto checkSetenvHome
+call &quot;%CATALINA_BASE%\bin\setenv.bat&quot;
+goto setenvDone
+:checkSetenvHome
+if exist &quot;%CATALINA_HOME%\bin\setenv.bat&quot; call &quot;%CATALINA_HOME%\bin\setenv.bat&quot;
+:setenvDone
+
+rem Get standard Java environment variables
+if exist &quot;%CATALINA_HOME%\bin\setclasspath.bat&quot; goto okSetclasspath
+echo Cannot find &quot;%CATALINA_HOME%\bin\setclasspath.bat&quot;
+echo This file is needed to run this program
+goto end
+:okSetclasspath
+call &quot;%CATALINA_HOME%\bin\setclasspath.bat&quot; %1
+if errorlevel 1 goto end</code></pre><p>主要是说，如果Tomcat的bin目录下面存在setenv.bat脚本的话(setenv.bat是干什么的？上面的注释说是用户自定义的环境变量，但并不是启动时必须的定义在setenv.bat中)，就执行它，通常情况下是没有的，继而又判断setclasspath.bat脚本是否存在，如果不存在的话， 直接报错，停止启动 Tomcat。如果存在的话，就去调用它，并把 第一个参数传进去。</p>
+<p>可以进入setclasspath.bat脚本看下，主要设置了以下几个环境变量：</p>
+<pre><code>JAVA_HOME
+JRE_HOME
+JAVA_ENDORSED_DIRS = %CATALINA_HOME%\endorsed
+_RUNJAVA = %JRE_HOME%\bin\java.exe
+_RUNJDB = %JAVA_HOME%\bin\jdb.exe</code></pre><p>所以这段是设置临时环境变量: CLASSPATH和setclasspath</p>
+<p><strong>第五段</strong>：</p>
+<pre><code>rem Add on extra jar file to CLASSPATH
+rem Note that there are no quotes as we do not want to introduce random
+rem quotes into the CLASSPATH
+if &quot;%CLASSPATH%&quot; == &quot;&quot; goto emptyClasspath
+set &quot;CLASSPATH=%CLASSPATH%;&quot;
+:emptyClasspath
+set &quot;CLASSPATH=%CLASSPATH%%CATALINA_HOME%\bin\bootstrap.jar&quot;
+
+if not &quot;%CATALINA_TMPDIR%&quot; == &quot;&quot; goto gotTmpdir
+set &quot;CATALINA_TMPDIR=%CATALINA_BASE%\temp&quot;
+:gotTmpdir
+
+rem Add tomcat-juli.jar to classpath
+rem tomcat-juli.jar can be over-ridden per instance
+if not exist &quot;%CATALINA_BASE%\bin\tomcat-juli.jar&quot; goto juliClasspathHome
+set &quot;CLASSPATH=%CLASSPATH%;%CATALINA_BASE%\bin\tomcat-juli.jar&quot;
+goto juliClasspathDone
+:juliClasspathHome
+set &quot;CLASSPATH=%CLASSPATH%;%CATALINA_HOME%\bin\tomcat-juli.jar&quot;
+:juliClasspathDone</code></pre><p>这段代码主要做了三件事:</p>
+<ol>
+<li>把 Tomcat bin 目录下的 bootstrap.jar 加入到环境变量中；</li>
+<li>设置 CATALINA_TMPDIR 环境变量的值为 Tomcat 目录下的 temp 目录；</li>
+<li>把 Tomcat bin 目录下的 tomcat-juli.jar 加入到环境变量中；</li>
+</ol>
+<p><strong>第六段</strong>：</p>
+<pre><code>if not &quot;%JSSE_OPTS%&quot; == &quot;&quot; goto gotJsseOpts
+set JSSE_OPTS=&quot;-Djdk.tls.ephemeralDHKeySize=2048&quot;
+:gotJsseOpts
+set &quot;JAVA_OPTS=%JAVA_OPTS% %JSSE_OPTS%&quot;
+
+rem Register custom URL handlers
+rem Do this here so custom URL handles (specifically &apos;war:...&apos;) can be used in the security policy
+set &quot;JAVA_OPTS=%JAVA_OPTS% -Djava.protocol.handler.pkgs=org.apache.catalina.webresources&quot;
+
+if not &quot;%LOGGING_CONFIG%&quot; == &quot;&quot; goto noJuliConfig
+set LOGGING_CONFIG=-Dnop
+if not exist &quot;%CATALINA_BASE%\conf\logging.properties&quot; goto noJuliConfig
+set LOGGING_CONFIG=-Djava.util.logging.config.file=&quot;%CATALINA_BASE%\conf\logging.properties&quot;
+:noJuliConfig
+
+if not &quot;%LOGGING_MANAGER%&quot; == &quot;&quot; goto noJuliManager
+set LOGGING_MANAGER=-Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+:noJuliManager
+
+rem Configure JAVA 9 specific start-up parameters
+set &quot;JDK_JAVA_OPTIONS=%JDK_JAVA_OPTIONS% --add-opens=java.base/java.lang=ALL-UNNAMED&quot;
+set &quot;JDK_JAVA_OPTIONS=%JDK_JAVA_OPTIONS% --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED&quot;</code></pre><p>主要是追加一系列的启动参数到 JAVA_OPTS 这个环境变量中。</p>
+<p><strong>第七段</strong>：</p>
+<pre><code>echo Using CATALINA_BASE:   &quot;%CATALINA_BASE%&quot;
+echo Using CATALINA_HOME:   &quot;%CATALINA_HOME%&quot;
+echo Using CATALINA_TMPDIR: &quot;%CATALINA_TMPDIR%&quot;
+if &quot;&quot;%1&quot;&quot; == &quot;&quot;debug&quot;&quot; goto use_jdk
+echo Using JRE_HOME:        &quot;%JRE_HOME%&quot;
+goto java_dir_displayed
+:use_jdk
+echo Using JAVA_HOME:       &quot;%JAVA_HOME%&quot;
+:java_dir_displayed
+echo Using CLASSPATH:       &quot;%CLASSPATH%&quot;</code></pre><p>打印相关的环境变量信息。</p>
+<p><strong>第八段</strong>：</p>
+<pre><code>set _EXECJAVA=%_RUNJAVA%
+set MAINCLASS=org.apache.catalina.startup.Bootstrap
+set ACTION=start
+set SECURITY_POLICY_FILE=
+set DEBUG_OPTS=
+set JPDA=</code></pre><p>设置一些环境变量:</p>
+<ol>
+<li>_RUNJAVA : %JRE_HOME%\bin\java.exe；</li>
+<li>MAINCLASS : 指定了 Tomcat 的启动类；</li>
+<li>ACTION : 动作， 就是启动；</li>
+<li>SECURITY_POLICY_FILE : 安全策略文件，如果启动的时候加上了 -security 参数的话，下面会对这个参数指定到 Tomcat 的 conf 目录下的 catalina.policy 文件；</li>
+<li>JPDA : 还不清楚，猜测是数据库相关技术，目前暂时忽略 。</li>
+</ol>
+<p><strong>第九段</strong>：</p>
+<pre><code>if not &quot;&quot;%1&quot;&quot; == &quot;&quot;jpda&quot;&quot; goto noJpda
+set JPDA=jpda
+if not &quot;%JPDA_TRANSPORT%&quot; == &quot;&quot; goto gotJpdaTransport
+set JPDA_TRANSPORT=dt_socket
+:gotJpdaTransport
+if not &quot;%JPDA_ADDRESS%&quot; == &quot;&quot; goto gotJpdaAddress
+set JPDA_ADDRESS=localhost:8000
+:gotJpdaAddress
+if not &quot;%JPDA_SUSPEND%&quot; == &quot;&quot; goto gotJpdaSuspend
+set JPDA_SUSPEND=n
+:gotJpdaSuspend
+if not &quot;%JPDA_OPTS%&quot; == &quot;&quot; goto gotJpdaOpts
+set JPDA_OPTS=-agentlib:jdwp=transport=%JPDA_TRANSPORT%,address=%JPDA_ADDRESS%,server=y,suspend=%JPDA_SUSPEND%
+:gotJpdaOpts
+shift
+:noJpda</code></pre><p><strong>第十段</strong>：</p>
+<pre><code>if &quot;&quot;%1&quot;&quot; == &quot;&quot;debug&quot;&quot; goto doDebug
+if &quot;&quot;%1&quot;&quot; == &quot;&quot;run&quot;&quot; goto doRun
+if &quot;&quot;%1&quot;&quot; == &quot;&quot;start&quot;&quot; goto doStart
+if &quot;&quot;%1&quot;&quot; == &quot;&quot;stop&quot;&quot; goto doStop
+if &quot;&quot;%1&quot;&quot; == &quot;&quot;configtest&quot;&quot; goto doConfigTest
+if &quot;&quot;%1&quot;&quot; == &quot;&quot;version&quot;&quot; goto doVersion
+
+echo Usage:  catalina ( commands ... )
+echo commands:
+echo   debug             Start Catalina in a debugger
+echo   debug -security   Debug Catalina with a security manager
+echo   jpda start        Start Catalina under JPDA debugger
+echo   run               Start Catalina in the current window
+echo   run -security     Start in the current window with security manager
+echo   start             Start Catalina in a separate window
+echo   start -security   Start in a separate window with security manager
+echo   stop              Stop Catalina
+echo   configtest        Run a basic syntax check on server.xml
+echo   version           What version of tomcat are you running?
+goto end</code></pre><p>如果用 startup.bat 启动 Tomcat 的话， 这里的 “%1” 的值是 start；<br>如果通过 catalina.bat run 启动 Tomcat 的话，这里的 “%1” 的值是 run；</p>
+<p>第十一段：</p>
+<pre><code>:doDebug
+shift
+set _EXECJAVA=%_RUNJDB%
+set DEBUG_OPTS=-sourcepath &quot;%CATALINA_HOME%\..\..\java&quot;
+if not &quot;&quot;%1&quot;&quot; == &quot;&quot;-security&quot;&quot; goto execCmd
+shift
+echo Using Security Manager
+set &quot;SECURITY_POLICY_FILE=%CATALINA_BASE%\conf\catalina.policy&quot;
+goto execCmd
+
+:doRun
+shift
+if not &quot;&quot;%1&quot;&quot; == &quot;&quot;-security&quot;&quot; goto execCmd
+shift
+echo Using Security Manager
+set &quot;SECURITY_POLICY_FILE=%CATALINA_BASE%\conf\catalina.policy&quot;
+goto execCmd
+
+:doStart
+shift
+if &quot;%TITLE%&quot; == &quot;&quot; set TITLE=Tomcat
+set _EXECJAVA=start &quot;%TITLE%&quot; %_RUNJAVA%
+if not &quot;&quot;%1&quot;&quot; == &quot;&quot;-security&quot;&quot; goto execCmd
+shift
+echo Using Security Manager
+set &quot;SECURITY_POLICY_FILE=%CATALINA_BASE%\conf\catalina.policy&quot;
+goto execCmd
+
+:doStop
+shift
+set ACTION=stop
+set CATALINA_OPTS=
+goto execCmd
+
+:doConfigTest
+shift
+set ACTION=configtest
+set CATALINA_OPTS=
+goto execCmd
+
+:doVersion
+%_EXECJAVA% -classpath &quot;%CATALINA_HOME%\lib\catalina.jar&quot; org.apache.catalina.util.ServerInfo
+goto end</code></pre><p>分别对应前面的标签，启动主要涉及doRun和doStart。</p>
+<p>第一个 shift 是把 start 或者 run 参数移除，然后下面 还是利用 “%1” 来取参数， 这时候， 取出来的就是参数列表中的第二个；<br>第二个 shift 是把第二个参数移除掉。</p>
+<p>我们再来比较一下 start 和 run 的启动区别.</p>
+<p>如果是 startup.bat 脚本启动的话， 会启动一个新的 cmd 窗口， 并且把 cmd 的 title 设置为 Tomcat。<br>如果是 catalina.bat run 启动的话， 不会新建 cmd 窗口, 也不会设置 cmd 的 title。</p>
+<p>最后都跳到了 execCmd 标签处。</p>
+<p><strong>第十二段</strong>：</p>
+<pre><code>:execCmd
+rem Get remaining unshifted command line arguments and save them in the
+set CMD_LINE_ARGS=
+:setArgs
+if &quot;&quot;%1&quot;&quot;==&quot;&quot;&quot;&quot; goto doneSetArgs
+set CMD_LINE_ARGS=%CMD_LINE_ARGS% %1
+shift
+goto setArgs
+:doneSetArgs</code></pre><p>这里还是利用 “%1” 来取出启动命令之后的参数， 如果存在， 追加到 CMD_LINE_ARGS 环境变量上，并把这个参数移除。通常情况下，这里是不会有什么参数。</p>
+<p><strong>第十三段</strong>：</p>
+<pre><code>rem Execute Java with the applicable properties
+if not &quot;%JPDA%&quot; == &quot;&quot; goto doJpda
+if not &quot;%SECURITY_POLICY_FILE%&quot; == &quot;&quot; goto doSecurity
+%_EXECJAVA% %LOGGING_CONFIG% %LOGGING_MANAGER% %JAVA_OPTS% %CATALINA_OPTS% %DEBUG_OPTS% -D%ENDORSED_PROP%=&quot;%JAVA_ENDORSED_DIRS%&quot; -classpath &quot;%CLASSPATH%&quot; -Dcatalina.base=&quot;%CATALINA_BASE%&quot; -Dcatalina.home=&quot;%CATALINA_HOME%&quot; -Djava.io.tmpdir=&quot;%CATALINA_TMPDIR%&quot; %MAINCLASS% %CMD_LINE_ARGS% %ACTION%
+goto end
+:doSecurity
+%_EXECJAVA% %LOGGING_CONFIG% %LOGGING_MANAGER% %JAVA_OPTS% %CATALINA_OPTS% %DEBUG_OPTS% -D%ENDORSED_PROP%=&quot;%JAVA_ENDORSED_DIRS%&quot; -classpath &quot;%CLASSPATH%&quot; -Djava.security.manager -Djava.security.policy==&quot;%SECURITY_POLICY_FILE%&quot; -Dcatalina.base=&quot;%CATALINA_BASE%&quot; -Dcatalina.home=&quot;%CATALINA_HOME%&quot; -Djava.io.tmpdir=&quot;%CATALINA_TMPDIR%&quot; %MAINCLASS% %CMD_LINE_ARGS% %ACTION%
+goto end
+:doJpda
+if not &quot;%SECURITY_POLICY_FILE%&quot; == &quot;&quot; goto doSecurityJpda
+%_EXECJAVA% %LOGGING_CONFIG% %LOGGING_MANAGER% %JAVA_OPTS% %JPDA_OPTS% %CATALINA_OPTS% %DEBUG_OPTS% -D%ENDORSED_PROP%=&quot;%JAVA_ENDORSED_DIRS%&quot; -classpath &quot;%CLASSPATH%&quot; -Dcatalina.base=&quot;%CATALINA_BASE%&quot; -Dcatalina.home=&quot;%CATALINA_HOME%&quot; -Djava.io.tmpdir=&quot;%CATALINA_TMPDIR%&quot; %MAINCLASS% %CMD_LINE_ARGS% %ACTION%
+goto end
+:doSecurityJpda
+%_EXECJAVA% %LOGGING_CONFIG% %LOGGING_MANAGER% %JAVA_OPTS% %JPDA_OPTS% %CATALINA_OPTS% %DEBUG_OPTS% -D%ENDORSED_PROP%=&quot;%JAVA_ENDORSED_DIRS%&quot; -classpath &quot;%CLASSPATH%&quot; -Djava.security.manager -Djava.security.policy==&quot;%SECURITY_POLICY_FILE%&quot; -Dcatalina.base=&quot;%CATALINA_BASE%&quot; -Dcatalina.home=&quot;%CATALINA_HOME%&quot; -Djava.io.tmpdir=&quot;%CATALINA_TMPDIR%&quot; %MAINCLASS% %CMD_LINE_ARGS% %ACTION%
+goto end
+
+:end</code></pre><p>正常启动，不会有jdpa，也不会有security，所以这大段代码主要是加一些环境变量，然后带上参数去启动org.apache.catalina.startup.Bootstrap的main方法。</p>
+<p>五、总结<br>启动tomcat可以双击startup.bat，也可以在命令行直接catalina.bat run，大致的流程是这样：</p>
+<ol>
+<li>首先判断一下用户直接使用 catalina.bat run 来启动 Tocmat；</li>
+<li>设置 CATALINA_HOME 和 CATALINA_BASE 环境变量值；</li>
+<li>验证 CATALINA_HOME 和 CATALINA_BASE 环境变量值的正确性；</li>
+<li>调用 setnv.bat 脚本；</li>
+<li>调用 setclasspath.bat 脚本；</li>
+<li>添加 bootstrap.jar 和 tomcat-juli.jar 到 CLASSPATH 中；</li>
+<li>设置 CATALINA_TMPDIR 临时目录的值为 Tomcat 目录下的 temp；</li>
+<li>追加一系列的参数到 JAVA_OPTS 中；</li>
+<li>整合相关的启动信息，参数；</li>
+<li>启动 Tomcat。</li>
+</ol>
+<p>参考链接：<a href="https://blog.csdn.net/w1992wishes/article/details/79317817">https://blog.csdn.net/w1992wishes/article/details/79317817</a></p>
+</div><div class="article-tags size-small mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/bat%E5%91%BD%E4%BB%A4/">bat命令</a><a class="link-muted mr-2" rel="tag" href="/tags/tomcat/">tomcat</a></div><!--!--></article></div><div class="card"><div class="card-content"><h3 class="menu-label has-text-centered">Gefällt Ihnen der Artikel? Unterstützen Sie den Autor mit</h3><div class="buttons is-centered"><a class="button is-info donate"><span class="icon is-small"><i class="fab fa-alipay"></i></span><span>Alipay</span><span class="qrcode"><img src="/" alt="Alipay"></span></a><a class="button is-success donate"><span class="icon is-small"><i class="fab fa-weixin"></i></span><span>Wechat</span><span class="qrcode"><img src="/" alt="Wechat"></span></a></div></div></div><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2018/10/29/tomat%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B%EF%BC%88%E4%BA%8C%EF%BC%89/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">tomat源码解析-启动过程（二）</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2018/10/13/bat%E5%91%BD%E4%BB%A4%E5%AD%A6%E4%B9%A0/"><span class="level-item">bat命令学习</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">Kommentare</h3><div class="content" id="valine-thread"></div><script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script><script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script><script>new Valine({
+            el: '#valine-thread' ,
+            appId: "vdKGC2peyYNqLJP9zJe3AqHe-gzGzoHsz",
+            appKey: "szUoRSxrU2ILylrufEgnWQTw",
+            
+            avatar: "mm",
+            
+            meta: ["nick","mail","link"],
+            pageSize: 10,
+            lang: "zh-Hans",
+            
+            highlight: true,
+            
+            
+            
+            
+            
+            requiredFields: [],
+        });</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-4-widescreen  order-1"><div class="card widget"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar" src="https://s1.ax1x.com/2020/06/08/thQzdS.th.jpg" alt="Jacklon"></figure><p class="title is-size-4 is-block line-height-inherit">Jacklon</p><p class="is-size-6 is-block">非典型程序员一枚</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>Beijing,China</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">Posts</p><a href="/archives"><p class="title">20</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">Kategorien</p><a href="/categories"><p class="title">14</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">Tags</p><a href="/tags"><p class="title">9</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/jaclon-m" target="_blank" rel="noopener">Folgen</a></div><div class="level is-mobile"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Facebook" href="https://facebook.com"><i class="fab fa-facebook"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Twitter" href="https://twitter.com"><i class="fab fa-twitter"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Dribbble" href="https://dribbble.com"><i class="fab fa-dribbble"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="RSS" href="/"><i class="fas fa-rss"></i></a></div></div></div><div class="card widget" id="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">Katalog</h3><ul class="menu-list"><li><a class="is-flex" href="#bat简单语法"><span class="mr-2">1</span><span>bat简单语法</span></a></li><li><a class="is-flex" href="#startup-bat"><span class="mr-2">2</span><span>startup.bat</span></a></li><li><a class="is-flex" href="#catalina-bat"><span class="mr-2">3</span><span>catalina.bat</span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.svg" alt="Jacklon&#039;s Blog" height="28"></a><p class="size-small"><span>&copy; 2020 Jacklon</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script>moment.locale("zh-Hans");</script><script>var IcarusThemeSettings = {
+            site: {
+                url: 'http://59.110.153.50',
+                external_link: {"enable":true,"exclude":[]}
+            },
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script src="/js/animation.js"></script><a id="back-to-top" title="Zurück nach oben" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="Tippen Sie etwas..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"Tippen Sie etwas...","untitled":"(Untitled)","posts":"Posts","pages":"Pages","categories":"Kategorien","tags":"Tags"});
+        });</script></body></html>
