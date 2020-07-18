@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="generator" content="Hexo 4.2.1"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>U6-类文件结构 - Jacklon&#039;s Blog</title><meta description="class文件程序编译后的结果：　　- 二进制本地机器码(0 1)　　- 与操作系统和机器指令集无关的、平台中立的一种格式——字节码文件(.class) 各种运行在不同平台上的虚拟机都使用同一种字节码文件。后来发展到了语言无关性，各种不同语言编译为用一种字节码文件。 class文件结构任何一个class文件都唯一对应着一个类或接口。反之则不然(比如类可以又类加载器直接生成) class文件是一组以"><meta property="og:type" content="blog"><meta property="og:title" content="U6-类文件结构"><meta property="og:url" content="http://59.110.153.50/2020/07/18/U6-%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/"><meta property="og:site_name" content="Jacklon&#039;s Blog"><meta property="og:description" content="class文件程序编译后的结果：　　- 二进制本地机器码(0 1)　　- 与操作系统和机器指令集无关的、平台中立的一种格式——字节码文件(.class) 各种运行在不同平台上的虚拟机都使用同一种字节码文件。后来发展到了语言无关性，各种不同语言编译为用一种字节码文件。 class文件结构任何一个class文件都唯一对应着一个类或接口。反之则不然(比如类可以又类加载器直接生成) class文件是一组以"><meta property="og:image" content="http://59.110.153.50/img/og_image.png"><meta property="article:published_time" content="2020-07-18T03:20:14.000Z"><meta property="article:modified_time" content="2020-07-18T03:25:47.623Z"><meta property="article:author" content="Jacklon"><meta property="article:tag" content="JVM"><meta property="twitter:card" content="summary"><meta property="twitter:image" content="/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"http://59.110.153.50/2020/07/18/U6-%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/"},"headline":"Jacklon's Blog","image":["http://59.110.153.50/img/og_image.png"],"datePublished":"2020-07-18T03:20:14.000Z","dateModified":"2020-07-18T03:25:47.623Z","author":{"@type":"Person","name":"Jacklon"},"description":"class文件程序编译后的结果：　　- 二进制本地机器码(0 1)　　- 与操作系统和机器指令集无关的、平台中立的一种格式——字节码文件(.class) 各种运行在不同平台上的虚拟机都使用同一种字节码文件。后来发展到了语言无关性，各种不同语言编译为用一种字节码文件。 class文件结构任何一个class文件都唯一对应着一个类或接口。反之则不然(比如类可以又类加载器直接生成) class文件是一组以"}</script><link rel="canonical" href="http://59.110.153.50/2020/07/18/U6-%E7%B1%BB%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84/"><link rel="icon" href="/img/favicon.svg"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.12.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@9.12.0/styles/dark.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><script>var _hmt = _hmt || [];
+        (function() {
+            var hm = document.createElement("script");
+            hm.src = "//hm.baidu.com/hm.js?65d4748cd6417633e46d97986b1808cf";
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(hm, s);
+        })();</script><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/css/justifiedGallery.min.css"><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/pace-js@1.0.2/pace.min.js"></script></head><body class="is-2-column"><nav class="navbar navbar-main"><div class="container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/img/logo.svg" alt="Jacklon&#039;s Blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">Home</a><a class="navbar-item" href="/archives">Archives</a><a class="navbar-item" href="/categories">Categories</a><a class="navbar-item" href="/tags">Tags</a><a class="navbar-item" href="/about">About</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="Katalog" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="Suche" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta size-small is-uppercase level is-mobile"><div class="level-left"><time class="level-item" dateTime="2020-07-18T03:20:14.000Z" title="2020-07-18T03:20:14.000Z">2020-07-18</time><span class="level-item"><a class="link-muted" href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/">编程语言</a><span> / </span><a class="link-muted" href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/JVM/">JVM</a></span><span class="level-item">21 minutes lesen (Über 3143 Worte)</span></div></div><h1 class="title is-3 is-size-4-mobile">U6-类文件结构</h1><div class="content"><h2 id="class文件"><a href="#class文件" class="headerlink" title="class文件"></a>class文件</h2><p>程序编译后的结果：<br>　　- 二进制本地机器码(0 1)<br>　　- 与操作系统和机器指令集无关的、平台中立的一种格式——字节码文件(.class)</p>
+<p>各种运行在不同平台上的虚拟机都使用同一种字节码文件。<br>后来发展到了语言无关性，各种不同语言编译为用一种字节码文件。</p>
+<h2 id="class文件结构"><a href="#class文件结构" class="headerlink" title="class文件结构"></a>class文件结构</h2><p>任何一个class文件都唯一对应着一个类或接口。反之则不然(比如类可以又类加载器直接生成)</p>
+<p>class文件是一组以<strong>8位字节</strong>为基础的二进制流。当要表示的数据占用空间大于8位字节时，采用<strong>高位在前</strong>的方式分割成若干个8位字节进行存储。<br>高位在前：Big-Endian 最高位字节在地址最低位<br>字节：一个字节包含8个二级制位，字节-Byte-B<br>比特（bit)又称为二进制位，简称位-b,代表一个0或1</p>
+<blockquote>
+<p>数据存储是以“字节”（Byte）为单位，数据传输大多是以“位”（bit，又名“比特”）为单位，一个位就代表一个0或1（即二进制），每8个位（bit，简写为b）组成一个字节（Byte，简写为B），是最小一级的信息单位。</p>
+</blockquote>
+<a id="more"></a>
+
+<h3 id="class文件数据类型：无符号数和表"><a href="#class文件数据类型：无符号数和表" class="headerlink" title="class文件数据类型：无符号数和表"></a>class文件数据类型：<strong>无符号数和表</strong></h3><p>　　-　无符号数： u1 u2 u4 u8 分别表示1个字节~8个字节的基本数据类型，用来描述数字，索引引用，数量值，字符串值<br>　　- 表：由多个无符号数和其它表构成 _info结尾</p>
+<h3 id="class文件格式（见-P-165-）"><a href="#class文件格式（见-P-165-）" class="headerlink" title="class文件格式（见$P_{165}$）"></a>class文件格式（见$P_{165}$）</h3><hr>
+<ul>
+<li>表头（魔数，版本信息）</li>
+<li>常量池</li>
+<li>访问标志，类索引和父类索引集合</li>
+<li>接口表集合，字段表集合，方法表集合，属性表集合</li>
+</ul>
+<hr>
+<h4 id="1-魔数与class文件版本"><a href="#1-魔数与class文件版本" class="headerlink" title="1. 魔数与class文件版本"></a>1. 魔数与class文件版本</h4><p>　　Magic Number： u4 标志文件类型信息：是否是class文件（JPG文件、GIF文件。。。） 0XCAFEBABE “咖啡宝贝”<br>　　Minor Version： 次版本号<br>　　Major Version :主版本号</p>
+<h4 id="2-常量池信息"><a href="#2-常量池信息" class="headerlink" title="2. 常量池信息"></a>2. 常量池信息</h4><p>记录这个文件中出现过的所有的类，方法，字段等的组成和结构。</p>
+<ol>
+<li><p>容量计数器（constant_pool_count）<br>记录常量池中共有多少项，从1开始而不是从0开始。例如常量池容量技术器值为22，表示共有21项常量，索引范围从1~21。将第0项索引空出来是为了表达“不引用常量池中的一项”时，将索引值置为0。</p>
+</li>
+<li><p><strong>字面量和符号引用</strong><br>常量池中主要存放两大类常量。</p>
+<pre><code>字面量（Literal）：文本字符串，声明为final类型的常量值等
+符号引用（Symbolic Reference）：
+    - 类和接口的全限定名（Fully Qualified Name）
+    - 字段和名称的描述符（Descriptor）
+    - 方法的名称和描述符</code></pre><p>java在编译的时候没有连接这个步骤，字段和方法的具体内存地址要在类创建时、运行时确定。</p>
+</li>
+<li><p>常量池中的14中项目（表）类型（见$P_{169}$)<br>共同特点：表的开始是一个u1类型的标志位，代表这个表是那种类型。<br>主要包含：</p>
+<ul>
+<li><p>UTF-8编码的字符串</p>
+</li>
+<li><p>整型、浮点型……字面量</p>
+</li>
+<li><p>类或接口的符号引用</p>
+</li>
+<li><p>字符串类型字面量</p>
+</li>
+<li><p>字段、类中方法、接口中方法的符号引用，字段或方法的具体符号引用</p>
+</li>
+<li><p>jdk1.7以后动态标识方法信息的表类型：方法句柄、方法类型、动态调用点</p>
+<p>  例（P$_{170}$）Constant_Class_info和Constant_Utf-8_info类型常量结构<br>  java中方法、字段名的最大长度为Constant_Utf-8_info类型表所能表示的最大值（U2)-65535，即程序中不能定义超过64KB的英文字符</p>
+</li>
+</ul>
+</li>
+<li><p>14中常量项的结构表（P$_{172}$）</p>
+</li>
+</ol>
+<h4 id="3-访问标志（access-flags"><a href="#3-访问标志（access-flags" class="headerlink" title="3. 访问标志（access_flags)"></a>3. 访问标志（access_flags)</h4><p>识别类或接口层次的访问信息，包括：是否public，final，abstract等等。<br>占两个字节，目前定义了8个，由8个标志求|得出最终值。（P$_{173}$）</p>
+<h4 id="4-类索引、父类索引与接口索引集合"><a href="#4-类索引、父类索引与接口索引集合" class="headerlink" title="4. 类索引、父类索引与接口索引集合"></a>4. 类索引、父类索引与接口索引集合</h4><p>　　类索引（this_class):u2 指向Constant_Class_Info类描述符常量-指向Constant_Utf-8_info类型常量中的全限定名字符串。<br>　　父类索引（super_class): u2类型，java中单继承，所以父类索引只有一个，只有Object类型索引值为0<br>　　接口索引集合： 一组u2类型数据，入口第一项为u2类型接口计数器</p>
+<h4 id="5-字段表集合"><a href="#5-字段表集合" class="headerlink" title="5. 字段表集合"></a>5. 字段表集合</h4><p>字段包括类级变量和实例级变量，不包括局部变量。<br>字段表结构：<br>    - access_flags u2 字段修饰符（P$_{176}$,public,private,volatile…)<br>    - name_index u2 简单名称<br>    - descriptor u2 字段和方法描述符<br>    - attribute_counts attributes 属性数量和描述</p>
+<pre><code>        **全限定名：**“org/fenixsoft/clazz/TestClass”
+        **简单名称：** TestClass inc m ...
+        **方法和字段描述符：**：用啦描述字段了数据类型，方法的参数列表和返回值。
+            - 基本数据类型，void(),对象：`B,C,D,F,I,J,S,Z,V,Ljava/lang/Object`
+            - 数组：&quot;[&quot;例如：`[[java/lang/String`表示`java.lang.String[][]`,`[I`表示`int[]`
+            - 方法：参数列表+返回值：参数列表按顺序放在小括号中`()`例如：`java.lang.String toString(char[] source,int i)`表示为`([CI)Ljava/lang/String`
+属性表集合attribute_info将在后面介绍
+字段表不会列出从父类继承而来的字段，但是可能列出原本java代码中不存在的字段，比如内部类中会自动添加指向外部类实例的字段。
+java语言中字段是无法重载的，两个字段不管数据类型和修饰符是否相同，必须不同名。但是对字节码来讲，只要两个字段描述符不一致，字段重名就是合法的。</code></pre><h4 id="6-方法表集合"><a href="#6-方法表集合" class="headerlink" title="6. 方法表集合"></a>6. 方法表集合</h4><p>与字段表集合类似，包含访问标志（access_flags）、名称索引（name_index）、描述符索引（descriptor_index）、属性表集合（attributes）几项。<br>方法中的java代码放在属性表集合的code属性中。<br>父类方法在子类中没有重写，方法集合表中就不会出现来自父类的方法信息，但是可能会出现编译器自动添加的方法，如<code>&lt;cinit&gt;</code>和<code>&lt;inti&gt;</code>.</p>
+<p>java代码层面的方法<strong>特征签名</strong>：方法名称、参数类型和参数顺序。字节码方面的方法<strong>特征签名</strong>还包括返回值类型。<br>java语言中方法重载要求与原方法有不同的特征签名，与返回值无关，因为返回值不会包含在特征签名中。</p>
+<h4 id="7-属性表集合"><a href="#7-属性表集合" class="headerlink" title="7. 属性表集合"></a>7. 属性表集合</h4><p>属性表与签名的其它表不同，要求没有那么严格，各种编译器可以自己定义属性信息。java虚拟机（Java SE7）中已经有21中预定义属性。（P$_{181}$常见预定义属性）<br>属性表定义应满足的基本结构：</p>
+<ul>
+<li>u2类型的attribute_name_index 从常量池中引用一个CONSTANT_Utf-8_info类型常量表示属性名称</li>
+<li>u4类型attribute_length说明属性占用长度</li>
+<li>attribute_length个u1类型数据说明属性</li>
+</ul>
+<hr>
+<ol>
+<li><p>Code属性<br>Code属性存储java方法体中的代码。<br>Code属性表结构（$P_{183}$）</p>
+<ul>
+<li><p>attribute_name_index u2 –CONSTANT_Utf_info–固定值“Code”</p>
+</li>
+<li><p>attribute_length u4 属性值长度–整个属性表的长度为attribute_length+6</p>
+</li>
+<li><p>max_stack u2 操作数栈深度最大值</p>
+<ul>
+<li>max_locals u2 局部变量表所需存储空间–slot是局部变量内存所使用最小单位，byte、char……returnAddress–1个slot;double、long–两个slot。方法参数，显示异常处理参数，方法体中的局部变量都存储在局部变量表中；局部变量表中的Slot可以重用，不是有多少局部变量，max_locals就多大。</li>
+</ul>
+</li>
+<li><p>code_length u4 和code u1 用来存储字节码指令 虽然code_length 为 u4 但是虚拟机规定一个方法不允许超过65535条字节码指令，因此，小心编译JSP文件时方法生成字节码超长导致编译失败</p>
+<p>  $P_{185}$使用javap命令计算出的字节码指令分析：注意<br>任何实例方法都可以通过this关键字访问到此方法所属对象，是因为在实例方法的局部变量表中至少存在一个指向当前对象的局部变量即Args_size最小值为1</p>
+</li>
+<li><p>exception_table_length u2 和exception_table exception_info类型 :显示异常处理表集合 $P_{186}$异常表格式 $P_{187}$异常的一个实例</p>
+</li>
+</ul>
+</li>
+<li><p>Exceptions属性<br>列出方法中可能抛出的受查异常，即throws关键字后面的异常。</p>
+</li>
+<li><p>LineNumberTable属性<br>用于描述java源码行号的字节码行号（偏移量）之间的对应关系</p>
+</li>
+<li><p>LocalVariableTable属性<br>用于描述局部变量表和java源码中定义的变量之间的关系。LocalVariableTypeTable用于描述泛型</p>
+</li>
+<li><p>SourceFile属性<br>记录生成这个Class文件的源码文件名称</p>
+</li>
+<li><p>ConstanValue属性<br>通知虚拟机自动为静态变量赋值（static）</p>
+</li>
+<li><p>InnerClass属性<br>记录内部类和宿主类之间的关联</p>
+</li>
+<li><p>Deprecated和Synthetic属性<br>属于标志类型的布尔属性，只有有何没有的区别，没有属性值的概念。Synthetic表示此字段或方法不是由java源码产生，而是编译器自动生成。</p>
+</li>
+<li><p>StackMapTalbe<br>在虚拟机类加载的字节码验证阶段被新类型检查器使用</p>
+</li>
+<li><p>Signature<br>记录泛型签名信息</p>
+</li>
+<li><p>BootStrapMethods属性<br>保存invokedDynamic指令引用的引导方法限定符</p>
+</li>
+</ol>
+<hr>
+<h2 id="字节码指令简介"><a href="#字节码指令简介" class="headerlink" title="字节码指令简介"></a>字节码指令简介</h2><p>java虚拟机指令由一个字节长度的、代表某种特定含义的数字（操作码 Opcode)以及跟随其后的零至多个代表此操作所需参数（操作数 Operands）组成。大多指令不含操作数，只有操作码。<br>字节码指令只有一个字节，指令集操作码 总数不能超过255条；表示大于一个字节额数据时要额外消耗部分性能。</p>
+<ol>
+<li>字节码和数据类型<br>大多数指令包含其对应的操作类型信息。如：<code>iload</code>,<code>fload</code>。a 代表 refenrence<br>java虚拟机指令操作码长度只有一个字节，操作码不可能包含所有数据类型，java虚拟机对特定的数据操作只提供了有限的类型相关指令去支持它。必要时可以转换。$P_{199}$java虚拟机指令集支持的数据类型</li>
+<li>加载和存储指令<br>用于将数据在栈帧中的局部变量表和操作数栈之间来回传输。<br>局部变量表=&gt;操作数栈load<br>操作数栈=&gt;局部变量表store<br>常量=&gt;操作数栈 ipush ldc(常量池-&gt;栈顶) const</li>
+<li>运算指令<br>rem求余 ineg取反 sh位移 cmp比较<br>只有除法和求余指令除数为0时会抛出异常。其余任何整数运算场景都不应该抛出运行时异常<br>操组溢出–无穷大 没有明确定义NaN</li>
+<li>其它指令<br>类型转换：i2b f2l…浮点转换为整型向0取整，溢出的话转换为T所能代表的最大或最小值<br>对象创建和访问：new newarray iaload<br>操作数栈管理：pop dup<br>控制转移：ifeq figt<br>方法调用和返回指令<br>异常处理指令：athrow 抛出；处理-异常表，不是由指令实现<br>同步指令：方法级同步-不通过指令；代码级同步-monitorenter,monitorexit</li>
+</ol>
+<hr>
+<p>注：JIT代码生成技术-java虚拟机代码在加载或执行时翻译为宿主机的CPU指令集</p>
+<hr>
+</div><div class="article-tags size-small mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/JVM/">JVM</a></div><!--!--></article></div><div class="card"><div class="card-content"><h3 class="menu-label has-text-centered">Gefällt Ihnen der Artikel? Unterstützen Sie den Autor mit</h3><div class="buttons is-centered"><a class="button is-info donate"><span class="icon is-small"><i class="fab fa-alipay"></i></span><span>Alipay</span><span class="qrcode"><img src="/" alt="Alipay"></span></a><a class="button is-success donate"><span class="icon is-small"><i class="fab fa-weixin"></i></span><span>Wechat</span><span class="qrcode"><img src="/" alt="Wechat"></span></a></div></div></div><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2020/07/18/U7-%E8%99%9A%E6%8B%9F%E6%9C%BA%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">U7-虚拟机类加载机制</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2020/07/17/03-dubbo%E5%88%86%E5%B1%82%E8%AE%BE%E8%AE%A1-%E6%A0%B8%E5%BF%83%E8%B0%83%E7%94%A8%E6%B5%81%E7%A8%8B/"><span class="level-item">03.dubbo分层设计+核心调用流程</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><div class="card"><div class="card-content"><h3 class="title is-5">Kommentare</h3><div class="content" id="valine-thread"></div><script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script><script src="https://cdn.jsdelivr.net/npm/valine@1.4.14/dist/Valine.min.js"></script><script>new Valine({
+            el: '#valine-thread' ,
+            appId: "vdKGC2peyYNqLJP9zJe3AqHe-gzGzoHsz",
+            appKey: "szUoRSxrU2ILylrufEgnWQTw",
+            
+            avatar: "mm",
+            
+            meta: ["nick","mail","link"],
+            pageSize: 10,
+            lang: "zh-Hans",
+            
+            highlight: true,
+            
+            
+            
+            
+            
+            requiredFields: [],
+        });</script></div></div></div><div class="column column-left is-4-tablet is-4-desktop is-4-widescreen  order-1"><div class="card widget"><div class="card-content"><nav class="level"><div class="level-item has-text-centered flex-shrink-1"><div><figure class="image is-128x128 mx-auto mb-2"><img class="avatar" src="https://s1.ax1x.com/2020/06/08/thQzdS.th.jpg" alt="Jacklon"></figure><p class="title is-size-4 is-block line-height-inherit">Jacklon</p><p class="is-size-6 is-block">非典型程序员一枚</p><p class="is-size-6 is-flex justify-content-center"><i class="fas fa-map-marker-alt mr-1"></i><span>Beijing,China</span></p></div></div></nav><nav class="level is-mobile"><div class="level-item has-text-centered is-marginless"><div><p class="heading">Posts</p><a href="/archives"><p class="title">24</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">Kategorien</p><a href="/categories"><p class="title">14</p></a></div></div><div class="level-item has-text-centered is-marginless"><div><p class="heading">Tags</p><a href="/tags"><p class="title">9</p></a></div></div></nav><div class="level"><a class="level-item button is-primary is-rounded" href="https://github.com/jaclon-m" target="_blank" rel="noopener">Folgen</a></div><div class="level is-mobile"><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Github" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Facebook" href="https://facebook.com"><i class="fab fa-facebook"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Twitter" href="https://twitter.com"><i class="fab fa-twitter"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="Dribbble" href="https://dribbble.com"><i class="fab fa-dribbble"></i></a><a class="level-item button is-transparent is-marginless" target="_blank" rel="noopener" title="RSS" href="/"><i class="fas fa-rss"></i></a></div></div></div><div class="card widget" id="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">Katalog</h3><ul class="menu-list"><li><a class="is-flex" href="#class文件"><span class="mr-2">1</span><span>class文件</span></a></li><li><a class="is-flex" href="#class文件结构"><span class="mr-2">2</span><span>class文件结构</span></a><ul class="menu-list"><li><a class="is-flex" href="#class文件数据类型：无符号数和表"><span class="mr-2">2.1</span><span>class文件数据类型：无符号数和表</span></a></li><li><a class="is-flex" href="#class文件格式（见-P-165-）"><span class="mr-2">2.2</span><span>class文件格式（见$P_{165}$）</span></a><ul class="menu-list"><li><a class="is-flex" href="#1-魔数与class文件版本"><span class="mr-2">2.2.1</span><span>1. 魔数与class文件版本</span></a></li><li><a class="is-flex" href="#2-常量池信息"><span class="mr-2">2.2.2</span><span>2. 常量池信息</span></a></li><li><a class="is-flex" href="#3-访问标志（access-flags"><span class="mr-2">2.2.3</span><span>3. 访问标志（access_flags)</span></a></li><li><a class="is-flex" href="#4-类索引、父类索引与接口索引集合"><span class="mr-2">2.2.4</span><span>4. 类索引、父类索引与接口索引集合</span></a></li><li><a class="is-flex" href="#5-字段表集合"><span class="mr-2">2.2.5</span><span>5. 字段表集合</span></a></li><li><a class="is-flex" href="#6-方法表集合"><span class="mr-2">2.2.6</span><span>6. 方法表集合</span></a></li><li><a class="is-flex" href="#7-属性表集合"><span class="mr-2">2.2.7</span><span>7. 属性表集合</span></a></li></ul></li></ul></li><li><a class="is-flex" href="#字节码指令简介"><span class="mr-2">3</span><span>字节码指令简介</span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/img/logo.svg" alt="Jacklon&#039;s Blog" height="28"></a><p class="size-small"><span>&copy; 2020 Jacklon</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/jaclon-m"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script>moment.locale("zh-Hans");</script><script>var IcarusThemeSettings = {
+            site: {
+                url: 'http://59.110.153.50',
+                external_link: {"enable":true,"exclude":[]}
+            },
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script src="/js/animation.js"></script><a id="back-to-top" title="Zurück nach oben" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><!--!--><!--!--><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.6.8/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.7.0/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><!--!--><!--!--><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="Tippen Sie etwas..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"Tippen Sie etwas...","untitled":"(Untitled)","posts":"Posts","pages":"Pages","categories":"Kategorien","tags":"Tags"});
+        });</script></body></html>
